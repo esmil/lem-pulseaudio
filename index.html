@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>LEM PulseAudio Test</title>
+</head>
+<body>
+	<p><pre id="out"></pre></p>
+	<script type="text/javascript" src="jquery.js"></script>
+	<script type="text/javascript" src="json2.js"></script>
+	<script type="text/javascript">
+$(function() {
+	var state = {},
+		out = document.getElementById('out'),
+		onDataReceived;
+
+	onDataReceived = function(ret) {
+		for (var p in ret) {
+			state[p] = ret[p];
+		}
+		out.innerHTML = JSON.stringify(state, null, '&nbsp;');
+		$.ajax({
+			url: '/poll/' + ret.stamp,
+			method: 'GET',
+			dataType: 'json',
+			success: onDataReceived
+		});
+	};
+
+	$.ajax({
+		url: '/poll/0',
+		method: 'GET',
+		dataType: 'json',
+		success: onDataReceived
+	});
+});
+	</script>
+</body>
+</html>
+
+<!-- vim: ts=2 sw=2 noet:
+-->
