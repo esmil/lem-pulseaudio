@@ -62,34 +62,38 @@ utils.spawn(function()
 end)
 
 local function json_addobj(res, t)
+	local idx, n = {}, 0
+	for k, _ in pairs(t) do
+		n = n + 1
+		idx[n] = k
+	end
 	res:add('{')
-	local f, s, var = pairs(t)
-	local k, v = f(s, var)
-	if k then
-		var = k
-		local typ
-		res:add('"%s":', k)
-		typ = type(v)
-		if typ == 'number' then
-			res:add('%d', v)
-		elseif typ == 'boolean' then
-			res:add('%s', v)
-		else
-			res:add('"%s"', tostring(v):gsub('"', '\\"'))
-		end
-		while true do
-			k, v = f(s, var)
-			if k == nil then break end
-			var = k
-			res:add(',"%s":', k)
+	if n > 0 then
+		table.sort(idx)
+
+		for i = 1, n do
+			local k = idx[i]
+			local v = t[k]
+
+			res:add('"%s":', k)
 			if k == 'volume' then
 				res:add('[%u', v[1])
 				for i = 2, #v do
 					res:add(',%u', v[i])
 				end
 				res:add(']')
+			elseif k == 'ports' or k == 'formats' then
+				res:add('[')
+				json_addobj(res, v[1])
+				for i = 2, #v do
+					res:add(',')
+					json_addobj(res, v[i])
+				end
+				res:add(']')
+			elseif k == 'proplist' or k == 'format' then
+				json_addobj(res, v)
 			else
-				typ = type(v)
+				local typ = type(v)
 				if typ == 'number' then
 					res:add('%d', v)
 				elseif typ == 'boolean' then
@@ -98,6 +102,8 @@ local function json_addobj(res, t)
 					res:add('"%s"', tostring(v):gsub('"', '\\"'))
 				end
 			end
+
+			if i < n then res:add(',') end
 		end
 	end
 	res:add('}')
