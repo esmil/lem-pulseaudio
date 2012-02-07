@@ -43,12 +43,17 @@ ctx_channel_map_push(lua_State *T, const pa_channel_map *map)
 }
 
 static void
-ctx_cvolume_push(lua_State *T, const pa_cvolume *volume)
+ctx_cvolume_push(lua_State *T, const pa_cvolume *cvol)
 {
-	char buf[100];
+	int channels = cvol->channels;
+	int i = 0;
 
-	pa_cvolume_snprint(buf, 100, volume);
-	lua_pushstring(T, buf);
+	lua_createtable(T, channels, 0);
+
+	while (i < channels) {
+		lua_pushnumber(T, cvol->values[i++]);
+		lua_rawseti(T, -2, i);
+	}
 }
 
 /*

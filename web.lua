@@ -82,13 +82,21 @@ local function json_addobj(res, t)
 			if k == nil then break end
 			var = k
 			res:add(',"%s":', k)
-			typ = type(v)
-			if typ == 'number' then
-				res:add('%d', v)
-			elseif typ == 'boolean' then
-				res:add('%s', v)
+			if k == 'volume' then
+				res:add('[%u', v[1])
+				for i = 2, #v do
+					res:add(',%u', v[i])
+				end
+				res:add(']')
 			else
-				res:add('"%s"', tostring(v):gsub('"', '\\"'))
+				typ = type(v)
+				if typ == 'number' then
+					res:add('%d', v)
+				elseif typ == 'boolean' then
+					res:add('%s', v)
+				else
+					res:add('"%s"', tostring(v):gsub('"', '\\"'))
+				end
 			end
 		end
 	end
