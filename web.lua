@@ -145,20 +145,30 @@ local function json_addchanged(res, stamp)
 	return ret
 end
 
-local function sendfile(content, path)
-	return function(req, res)
-		res.headers['Content-Type'] = content
-		res.file = path
-	end
-end
-
 hathaway.import()
 
-GET('/index.html', sendfile('text/html; charset=UTF-8',       'index.html'))
-GET('/jquery.js',  sendfile('text/javascript; charset=UTF-8', 'jquery-1.7.1.min.js'))
-GET('/json2.js',   sendfile('text/javascript; charset=UTF-8', 'json2.js'))
+GET('/index.html', function(req, res)
+	res.headers['Content-Type'] = 'text/html; charset=UTF-8'
+	res.file = 'index.html'
+end)
 
-MATCH('/poll/(%d+%.?%d*)', function(req, res, stamp)
+MATCH('^/(js/.+)$', function(req, res, file)
+	if req.method ~= 'GET' and req.method ~= 'HEAD' then
+		return hathaway.method_not_allowed(req, res)
+	end
+	res.headers['Content-Type'] = 'text/javascript; charset=UTF-8'
+	res.file = file
+end)
+
+MATCH('^/(css/.+)$', function(req, res, file)
+	if req.method ~= 'GET' and req.method ~= 'HEAD' then
+		return hathaway.method_not_allowed(req, res)
+	end
+	res.headers['Content-Type'] = 'text/css; charset=UTF-8'
+	res.file = file
+end)
+
+MATCH('^/poll/(%d+%.?%d*)$', function(req, res, stamp)
 	if req.method ~= 'GET' and req.method ~= 'HEAD' then
 		return hathaway.method_not_allowed(req, res)
 	end

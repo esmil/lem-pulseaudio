@@ -5,22 +5,132 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <title>LEM PulseAudio Test</title>
+	<link rel="stylesheet" href="css/ui-darkness/jquery-ui-1.8.17.custom.css" type="text/css" media="all" />
+	<script id="server-template" type="text/x-handlebars-template">
+<dl>
+	<dt>Server Name</dt><dd>{{server.server_name}}</dd>
+	<dt>Server Version</dt><dd>{{server.server_version}}</dd>
+	<dt>Host Name</dt><dd>{{server.host_name}}</dd>
+	<dt>User Name</dt><dd>{{server.user_name}}</dd>
+</dl>
+	</script>
+	<script id="sink-template" type="text/x-handlebars-template">
+{{#each sink}}
+<h4>{{description}}</h4>
+<p>Volume:{{#each volume}} {{this}}{{/each}}</p>
+{{#each volume}}
+<div class="slider"></div>
+{{/each}}
+{{/each}}
+	</script>
+	<script id="source-template" type="text/x-handlebars-template">
+{{#each source}}
+<h4>{{description}}</h4>
+<p>Volume:{{#each volume}} {{this}}{{/each}}</p>
+{{#each volume}}
+<div class="slider"></div>
+{{/each}}
+{{/each}}
+	</script>
+	<script id="sink-input-template" type="text/x-handlebars-template">
+{{#each sink_input}}
+<h4>{{name}}</h4>
+{{#if has_volume}}
+<p>Volume:{{#each volume}} {{this}}{{/each}}</p>
+{{#each volume}}
+<div class="slider"></div>
+{{/each}}
+{{/if}}
+{{/each}}
+	</script>
+	<script id="source-output-template" type="text/x-handlebars-template">
+{{#each source_output}}
+<h4>{{name}}</h4>
+{{/each}}
+	</script>
+	<script id="sample-template" type="text/x-handlebars-template">
+{{#each sample}}
+<h4>{{description}}</h4>
+{{/each}}
+	</script>
+	<script id="module-template" type="text/x-handlebars-template">
+{{#each module}}
+<h4>{{name}}</h4>
+{{/each}}
+	</script>
+	<script id="client-template" type="text/x-handlebars-template">
+{{#each client}}
+<h4>{{name}}</h4>
+{{/each}}
+	</script>
 </head>
 <body>
-	<p><pre id="out"></pre></p>
-	<script type="text/javascript" src="jquery.js"></script>
-	<script type="text/javascript" src="json2.js"></script>
+	<script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
+	<script type="text/javascript" src="js/jquery-ui-1.8.17.custom.min.js"></script>
+	<script type="text/javascript" src="js/handlebars-1.0.0.beta.6.js"></script>
+	<script type="text/javascript" src="js/json2.js"></script>
+	<div id="tabs">
+		<ul>
+			<li><a href="#server">Server</a></li>
+			<li><a href="#sinks">Sinks</a></li>
+			<li><a href="#sources">Sources</a></li>
+			<li><a href="#sink-inputs">Sink Inputs</a></li>
+			<li><a href="#source-outputs">Source Outputs</a></li>
+			<li><a href="#samples">Samples</a></li>
+			<li><a href="#modules">Modules</a></li>
+			<li><a href="#clients">Clients</a></li>
+			<li><a href="#json">JSON</a></li>
+		</ul>
+		<div id="server"></div>
+		<div id="sinks"></div>
+		<div id="sources"></div>
+		<div id="sink-inputs"></div>
+		<div id="source-outputs"></div>
+		<div id="samples"></div>
+		<div id="modules"></div>
+		<div id="clients"></div>
+		<div id="json"><pre id="raw"></pre></div>
+	</div>
 	<script type="text/javascript">
 $(function() {
 	var state = {},
-		out = document.getElementById('out'),
+		output = {
+			server:        document.getElementById('server'),
+			sink:          document.getElementById('sinks'),
+			source:        document.getElementById('sources'),
+			sink_input:    document.getElementById('sink-inputs'),
+			source_output: document.getElementById('source-outputs'),
+			sample:        document.getElementById('samples'),
+			module:        document.getElementById('modules'),
+			client:        document.getElementById('clients')
+		},
+		template = {
+			server:        Handlebars.compile($("#server-template").html()),
+			sink:          Handlebars.compile($("#sink-template").html()),
+			source:        Handlebars.compile($("#source-template").html()),
+			sink_input:    Handlebars.compile($("#sink-input-template").html()),
+			source_output: Handlebars.compile($("#source-output-template").html()),
+			sample:        Handlebars.compile($("#sample-template").html()),
+			module:        Handlebars.compile($("#module-template").html()),
+			client:        Handlebars.compile($("#client-template").html())
+		},
+		raw = document.getElementById('raw'),
 		onDataReceived;
 
+	$("#tabs").tabs();
+
 	onDataReceived = function(ret) {
-		for (var p in ret) {
+		var p, t;
+
+		for (p in ret) {
 			state[p] = ret[p];
+			t = template[p];
+			if (t) {
+				output[p].innerHTML = t(state);
+			}
 		}
-		out.innerHTML = JSON.stringify(state, null, '&nbsp;');
+		raw.innerHTML = JSON.stringify(state, null, '&nbsp;');
+		$(".slider").each(function() { $(this).slider(); });
 		$.ajax({
 			url: '/poll/' + ret.stamp,
 			method: 'GET',
