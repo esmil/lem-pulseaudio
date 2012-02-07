@@ -28,38 +28,33 @@ do
 end
 
 utils.spawn(function()
-	local function update(t, idx, data)
-		t.stamp = gettimeofday()
-		t.data[idx] = data
-	end
-
-	local lookup = {
-		server = function(c, typ, idx)
-			local server = state.server
-			server.stamp = gettimeofday()
-			server.data = c:server_info()
-		end,
-		sink = function(c, typ, idx)
-			update(state.sink, idx, c:sink_info(idx)) end,
-		source = function(c, typ, idx)
-			update(state.source, idx, c:source_info(idx)) end,
-		sink_input = function(c, typ, idx)
-			update(state.sink_input, idx, c:sink_input_info(idx)) end,
-		source_output = function(c, typ, idx)
-			update(state.source_output, idx, c:source_output_info(idx)) end,
-		sample = function(c, typ, idx)
-			update(state.sample, idx, c:sample_info(idx)) end,
-		module = function(c, typ, idx)
-			update(state.module, idx, c:module_info(idx)) end,
-		client = function(c, typ, idx)
-			update(state.client, idx, c:client_info(idx)) end,
+	local getinfo = {
+		sink          = function(c, idx) return c:sink_info(idx) end,
+		source        = function(c, idx) return c:source_info(idx) end,
+		sink_input    = function(c, idx) return c:sink_input_info(idx) end,
+		source_output = function(c, idx) return c:source_output_info(idx) end,
+		sample        = function(c, idx) return c:sample_info(idx) end,
+		module        = function(c, idx) return c:module_info(idx) end,
+		client        = function(c, idx) return c:client_info(idx) end,
 	}
 
 	while true do
 		local src, typ, idx = assert(c:get_event())
 
 		print(src, typ, idx)
-		lookup[src](c, typ, idx)
+		local t = state[src]
+		if src == 'server' then
+			t.data = c:server_info()
+		else
+			if typ == 'remove' then
+				t.data[idx] = nil
+			else
+				t.data[idx] = getinfo[src](c, idx)
+			end
+		end
+		t.stamp = gettimeofday()
+
+		-- wake up long-polling clients
 		for sleeper, _ in pairs(queue) do
 			sleeper:wakeup()
 		end
@@ -150,6 +145,9 @@ GET('/jquery.js',  sendfile('text/javascript; charset=UTF-8', 'jquery-1.7.1.min.
 GET('/json2.js',   sendfile('text/javascript; charset=UTF-8', 'json2.js'))
 
 MATCH('/poll/(%d+%.?%d*)', function(req, res, stamp)
+	if req.method ~= 'GET' and req.method ~= 'HEAD' then
+		return hathaway.method_not_allowed(req, res)
+	end
 	res.headers['Content-Type'] = 'text/javascript; charset=UTF-8'
 	res.headers['Cache-Control'] = 'max-age=0, must-revalidate'
 	res:add('{')
