@@ -38,7 +38,7 @@ endif
 
 all: $(clibs)
 
-core.so: pulseaudio.c mainloop.c query.c
+core.so: pulseaudio.c mainloop.c query.c set.c
 	$E '  CCLD $@'
 	$Q$(CC) $(CFLAGS) -fPIC -nostartfiles $(SHARED) $< -o $@ $(LDFLAGS) -lpulse
 

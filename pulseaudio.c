@@ -78,86 +78,20 @@ ctx_disconnect(lua_State *T)
 	return 1;
 }
 
+static void
+ctx_success_cb(pa_context *c, int success, void *userdata)
+{
+	lua_State *T = userdata;
+
+	(void)c;
+	lem_debug("success = %d", success);
+
+	lua_pushboolean(T, success);
+	lem_queue(T, 1);
+}
+
 #include "query.c"
-
-static void
-ctx_load_module_cb(pa_context *c, uint32_t idx, void *userdata)
-{
-	lua_State *T = userdata;
-
-	(void)c;
-
-	lua_pushnumber(T, idx);
-	lem_queue(T, 1);
-}
-
-static int
-ctx_load_module(lua_State *T)
-{
-	struct ctx *ctx;
-	const char *name;
-	const char *arg;
-	pa_operation *o;
-
-	luaL_checktype(T, 1, LUA_TUSERDATA);
-	name = luaL_checkstring(T, 2);
-	arg = luaL_optstring(T, 3, "");
-	ctx = lua_touserdata(T, 1);
-	if (ctx->handle == NULL) {
-		lua_pushnil(T);
-		lua_pushliteral(T, "closed");
-		return 2;
-	}
-
-	lua_settop(T, 1);
-	o = pa_context_load_module(ctx->handle, name, arg, ctx_load_module_cb, T);
-	pa_operation_unref(o);
-	return lua_yield(T, lua_gettop(T));
-}
-
-static void
-ctx_unload_module_cb(pa_context *c, int success, void *userdata)
-{
-	lua_State *T = userdata;
-
-	(void)c;
-
-	lua_pushboolean(T, success);
-	lem_queue(T, 1);
-}
-
-static int
-ctx_unload_module(lua_State *T)
-{
-	struct ctx *ctx;
-	uint32_t idx;
-	pa_operation *o;
-
-	luaL_checktype(T, 1, LUA_TUSERDATA);
-	idx = luaL_checknumber(T, 2);
-	ctx = lua_touserdata(T, 1);
-	if (ctx->handle == NULL) {
-		lua_pushnil(T);
-		lua_pushliteral(T, "closed");
-		return 2;
-	}
-
-	lua_settop(T, 1);
-	o = pa_context_unload_module(ctx->handle, idx, ctx_unload_module_cb, T);
-	pa_operation_unref(o);
-	return lua_yield(T, lua_gettop(T));
-}
-
-static void
-ctx_subscribe_cb(pa_context *c, int success, void *userdata)
-{
-	lua_State *T = userdata;
-
-	(void)c;
-
-	lua_pushboolean(T, success);
-	lem_queue(T, 1);
-}
+#include "set.c"
 
 static int
 ctx_subscribe(lua_State *T)
@@ -176,7 +110,7 @@ ctx_subscribe(lua_State *T)
 	}
 
 	lua_settop(T, 1);
-	o = pa_context_subscribe(ctx->handle, mask, ctx_subscribe_cb, T);
+	o = pa_context_subscribe(ctx->handle, mask, ctx_success_cb, T);
 	pa_operation_unref(o);
 	return lua_yield(T, lua_gettop(T));
 }
@@ -375,6 +309,18 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.client_info = <ctx_client_info> */
 	lua_pushcfunction(L, ctx_client_info);
 	lua_setfield(L, -2, "client_info");
+	/* mt.sink_mute = <ctx_sink_mute> */
+	lua_pushcfunction(L, ctx_sink_mute);
+	lua_setfield(L, -2, "sink_mute");
+	/* mt.sink_unmute = <ctx_sink_unmute> */
+	lua_pushcfunction(L, ctx_sink_unmute);
+	lua_setfield(L, -2, "sink_unmute");
+	/* mt.set_sink_volume = <ctx_set_sink_volume> */
+	lua_pushcfunction(L, ctx_set_sink_volume);
+	lua_setfield(L, -2, "set_sink_volume");
+	/* mt.set_sink_port = <ctx_set_sink_port> */
+	lua_pushcfunction(L, ctx_set_sink_port);
+	lua_setfield(L, -2, "set_sink_port");
 	/* mt.load_module = <ctx_load_module> */
 	lua_pushcfunction(L, ctx_load_module);
 	lua_setfield(L, -2, "load_module");
