@@ -56,6 +56,49 @@ ctx_cvolume_push(lua_State *T, const pa_cvolume *cvol)
 	}
 }
 
+static void
+ctx_proplist_push(lua_State *T, pa_proplist *p)
+{
+	void *state = NULL;
+	const char *key;
+
+	lua_createtable(T, 0, pa_proplist_size(p));
+
+	while ((key = pa_proplist_iterate(p, &state)) != NULL) {
+		const char *value = pa_proplist_gets(p, key);
+
+		if (value) {
+			lua_pushstring(T, value);
+			lua_setfield(T, -2, key);
+		}
+	}
+}
+
+static void
+ctx_format_push(lua_State *T, pa_format_info *f)
+{
+	lua_createtable(T, 0, 2);
+
+	lua_pushnumber(T, f->encoding);
+	lua_setfield(T, -2, "encoding");
+	if (f->plist) {
+		ctx_proplist_push(T, f->plist);
+		lua_setfield(T, -2, "proplist");
+	}
+}
+
+static void
+ctx_formats_push(lua_State *T, int formats, pa_format_info **f)
+{
+	int i = 0;
+
+	lua_createtable(T, formats, 0);
+	while (i < formats) {
+		ctx_format_push(T, f[i++]);
+		lua_rawseti(T, -2, i);
+	}
+}
+
 /*
  * Server Info
  */
@@ -166,7 +209,7 @@ ctx_stat(lua_State *T)
 static void
 ctx_sink_info_push(lua_State *T, const pa_sink_info *info)
 {
-	lua_createtable(T, 0, 15);
+	lua_createtable(T, 0, 20);
 	lua_pushstring(T, info->name);
 	lua_setfield(T, -2, "name");
 	lua_pushnumber(T, info->index);
@@ -193,15 +236,46 @@ ctx_sink_info_push(lua_State *T, const pa_sink_info *info)
 	lua_setfield(T, -2, "latency");
 	lua_pushstring(T, info->driver);
 	lua_setfield(T, -2, "driver");
-	/* ... */
+	lua_pushnumber(T, info->flags);
+	lua_setfield(T, -2, "flags");
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
 	lua_pushnumber(T, info->configured_latency);
 	lua_setfield(T, -2, "configured_latency");
-	/* ... */
+	lua_pushnumber(T, info->base_volume);
+	lua_setfield(T, -2, "base_volume");
 	lua_pushnumber(T, info->n_volume_steps);
 	lua_setfield(T, -2, "n_volume_steps");
 	if (info->card != PA_INVALID_INDEX) {
 		lua_pushnumber(T, info->card);
 		lua_setfield(T, -2, "card");
+	}
+	if (info->ports) {
+		uint32_t i = 0;
+
+		lua_createtable(T, info->n_ports, 0);
+
+		while (i < info->n_ports) {
+			lua_createtable(T, 0, 4);
+
+			lua_pushstring(T, info->ports[i]->name);
+			lua_setfield(T, -2, "name");
+			lua_pushstring(T, info->ports[i]->description);
+			lua_setfield(T, -2, "description");
+			lua_pushnumber(T, info->ports[i]->priority);
+			lua_setfield(T, -2, "priority");
+			lua_pushboolean(T, info->active_port == info->ports[i]);
+			lua_setfield(T, -2, "active");
+
+			lua_rawseti(T, -2, ++i);
+		}
+		lua_setfield(T, -2, "ports");
+	}
+	if (info->formats) {
+		ctx_formats_push(T, info->n_formats, info->formats);
+		lua_setfield(T, -2, "formats");
 	}
 }
 
@@ -285,7 +359,7 @@ ctx_sink_info(lua_State *T)
 static void
 ctx_source_info_push(lua_State *T, const pa_source_info *info)
 {
-	lua_createtable(T, 0, 15);
+	lua_createtable(T, 0, 21);
 	lua_pushstring(T, info->name);
 	lua_setfield(T, -2, "name");
 	lua_pushnumber(T, info->index);
@@ -314,15 +388,48 @@ ctx_source_info_push(lua_State *T, const pa_source_info *info)
 	lua_setfield(T, -2, "latency");
 	lua_pushstring(T, info->driver);
 	lua_setfield(T, -2, "driver");
-	/* ... */
+	lua_pushnumber(T, info->flags);
+	lua_setfield(T, -2, "flags");
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
 	lua_pushnumber(T, info->configured_latency);
 	lua_setfield(T, -2, "configured_latency");
-	/* ... */
+	lua_pushnumber(T, info->base_volume);
+	lua_setfield(T, -2, "base_volume");
+	lua_pushnumber(T, info->state);
+	lua_setfield(T, -2, "state");
 	lua_pushnumber(T, info->n_volume_steps);
 	lua_setfield(T, -2, "n_volume_steps");
 	if (info->card != PA_INVALID_INDEX) {
 		lua_pushnumber(T, info->card);
 		lua_setfield(T, -2, "card");
+	}
+	if (info->ports) {
+		uint32_t i = 0;
+
+		lua_createtable(T, info->n_ports, 0);
+
+		while (i < info->n_ports) {
+			lua_createtable(T, 0, 4);
+
+			lua_pushstring(T, info->ports[i]->name);
+			lua_setfield(T, -2, "name");
+			lua_pushstring(T, info->ports[i]->description);
+			lua_setfield(T, -2, "description");
+			lua_pushnumber(T, info->ports[i]->priority);
+			lua_setfield(T, -2, "priority");
+			lua_pushboolean(T, info->active_port == info->ports[i]);
+			lua_setfield(T, -2, "active");
+
+			lua_rawseti(T, -2, ++i);
+		}
+		lua_setfield(T, -2, "ports");
+	}
+	if (info->formats) {
+		ctx_formats_push(T, info->n_formats, info->formats);
+		lua_setfield(T, -2, "formats");
 	}
 }
 
@@ -405,7 +512,7 @@ ctx_source_info(lua_State *T)
 static void
 ctx_sink_input_info_push(lua_State *T, const pa_sink_input_info *info)
 {
-	lua_createtable(T, 0, 16);
+	lua_createtable(T, 0, 18);
 	lua_pushnumber(T, info->index);
 	lua_setfield(T, -2, "index");
 	lua_pushstring(T, info->name);
@@ -436,14 +543,20 @@ ctx_sink_input_info_push(lua_State *T, const pa_sink_input_info *info)
 	lua_setfield(T, -2, "driver");
 	lua_pushboolean(T, info->mute);
 	lua_setfield(T, -2, "mute");
-	/* ... */
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
 	lua_pushboolean(T, info->corked);
 	lua_setfield(T, -2, "corked");
 	lua_pushboolean(T, info->has_volume);
 	lua_setfield(T, -2, "has_volume");
 	lua_pushboolean(T, info->volume_writable);
 	lua_setfield(T, -2, "volume_writable");
-	/* ... */
+	if (info->format) {
+		ctx_format_push(T, info->format);
+		lua_setfield(T, -2, "format");
+	}
 }
 
 static void
@@ -502,7 +615,7 @@ ctx_sink_input_info(lua_State *T)
 static void
 ctx_source_output_info_push(lua_State *T, const pa_source_output_info *info)
 {
-	lua_createtable(T, 0, 16);
+	lua_createtable(T, 0, 19);
 	lua_pushnumber(T, info->index);
 	lua_setfield(T, -2, "index");
 	lua_pushstring(T, info->name);
@@ -531,17 +644,24 @@ ctx_source_output_info_push(lua_State *T, const pa_source_output_info *info)
 	lua_setfield(T, -2, "resample_method");
 	lua_pushstring(T, info->driver);
 	lua_setfield(T, -2, "driver");
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
 	lua_pushboolean(T, info->mute);
 	lua_setfield(T, -2, "mute");
-	/* ... */
 	lua_pushboolean(T, info->corked);
 	lua_setfield(T, -2, "corked");
-	/* ... */
+	ctx_cvolume_push(T, &info->volume);
+	lua_setfield(T, -2, "volume");
 	lua_pushboolean(T, info->has_volume);
 	lua_setfield(T, -2, "has_volume");
 	lua_pushboolean(T, info->volume_writable);
 	lua_setfield(T, -2, "volume_writable");
-	/* ... */
+	if (info->format) {
+		ctx_format_push(T, info->format);
+		lua_setfield(T, -2, "format");
+	}
 }
 
 static void
@@ -600,7 +720,7 @@ ctx_source_output_info(lua_State *T)
 static void
 ctx_sample_info_push(lua_State *T, const pa_sample_info *info)
 {
-	lua_createtable(T, 0, 9);
+	lua_createtable(T, 0, 10);
 	lua_pushnumber(T, info->index);
 	lua_setfield(T, -2, "index");
 	lua_pushstring(T, info->name);
@@ -619,7 +739,10 @@ ctx_sample_info_push(lua_State *T, const pa_sample_info *info)
 	lua_setfield(T, -2, "lazy");
 	lua_pushstring(T, info->filename);
 	lua_setfield(T, -2, "filename");
-	/* ... */
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
 }
 
 static void
@@ -700,7 +823,7 @@ ctx_sample_info(lua_State *T)
 static void
 ctx_module_info_push(lua_State *T, const pa_module_info *info)
 {
-	lua_createtable(T, 0, 9);
+	lua_createtable(T, 0, 5);
 	lua_pushnumber(T, info->index);
 	lua_setfield(T, -2, "index");
 	lua_pushstring(T, info->name);
@@ -711,7 +834,10 @@ ctx_module_info_push(lua_State *T, const pa_module_info *info)
 		lua_pushnumber(T, info->n_used);
 		lua_setfield(T, -2, "n_used");
 	}
-	/* ... */
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
 }
 
 static void
@@ -770,7 +896,7 @@ ctx_module_info(lua_State *T)
 static void
 ctx_client_info_push(lua_State *T, const pa_client_info *info)
 {
-	lua_createtable(T, 0, 4);
+	lua_createtable(T, 0, 5);
 	lua_pushnumber(T, info->index);
 	lua_setfield(T, -2, "index");
 	lua_pushstring(T, info->name);
@@ -781,7 +907,10 @@ ctx_client_info_push(lua_State *T, const pa_client_info *info)
 	}
 	lua_pushstring(T, info->driver);
 	lua_setfield(T, -2, "driver");
-	/* ... */
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
 }
 
 static void
