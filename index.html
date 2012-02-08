@@ -18,18 +18,13 @@
 {{#each sink}}
 <h4>{{description}}</h4>
 <p>Volume:{{#each volume}} {{this}}{{/each}}</p>
-{{#each volume}}
-<div class="slider"></div>
-{{/each}}
+<div id="sink-{{index}}-vol"></div>
 {{/each}}
 	</script>
 	<script id="source-template" type="text/x-handlebars-template">
 {{#each source}}
 <h4>{{description}}</h4>
 <p>Volume:{{#each volume}} {{this}}{{/each}}</p>
-{{#each volume}}
-<div class="slider"></div>
-{{/each}}
 {{/each}}
 	</script>
 	<script id="sink-input-template" type="text/x-handlebars-template">
@@ -37,9 +32,6 @@
 <h4>{{name}}</h4>
 {{#if has_volume}}
 <p>Volume:{{#each volume}} {{this}}{{/each}}</p>
-{{#each volume}}
-<div class="slider"></div>
-{{/each}}
 {{/if}}
 {{/each}}
 	</script>
@@ -56,6 +48,7 @@
 	<script id="module-template" type="text/x-handlebars-template">
 {{#each module}}
 <h4>{{name}}</h4>
+<p>{{description}}<br />{{author}}<br />{{version}}</p>
 {{/each}}
 	</script>
 	<script id="client-template" type="text/x-handlebars-template">
@@ -114,6 +107,26 @@ $(function() {
 			module:        Handlebars.compile($("#module-template").html()),
 			client:        Handlebars.compile($("#client-template").html())
 		},
+		render = {
+			sink: function() {
+				var sink = state.sink, s
+
+				for (var i in sink) {
+					s = sink[i]
+					$('#sink-' + s.index + '-vol').slider({
+						min: 0,
+						max: 65536,
+						value: s.volume[0],
+						change: function(event, ui) {
+							$.ajax({
+								url: '/sink/' + s.index + '/volume/' + ui.value,
+								method: 'GET'
+							});
+						}
+					});
+				}
+			}
+		},
 		raw = document.getElementById('raw'),
 		onDataReceived;
 
@@ -128,9 +141,13 @@ $(function() {
 			if (t) {
 				output[p].innerHTML = t(state);
 			}
+			t = render[p];
+			if (t) {
+				t();
+			}
 		}
 		raw.innerHTML = JSON.stringify(state, null, '&nbsp;');
-		$(".slider").each(function() { $(this).slider(); });
+		//$(".slider").each(function() { $(this).slider(); });
 		$.ajax({
 			url: '/poll/' + ret.stamp,
 			method: 'GET',
