@@ -40,7 +40,7 @@ ctx_cvolume_check(lua_State *T, int idx, pa_cvolume *cvol)
  * Sinks
  */
 static int
-ctx_set_sink_mute(lua_State *T, int mute)
+ctx__set_sink_mute(lua_State *T, int mute)
 {
 	struct ctx *ctx;
 	int type;
@@ -83,15 +83,15 @@ ctx_set_sink_mute(lua_State *T, int mute)
 }
 
 static int
-ctx_sink_mute(lua_State *T)
+ctx_set_sink_mute(lua_State *T)
 {
-	return ctx_set_sink_mute(T, 1);
+	return ctx__set_sink_mute(T, 1);
 }
 
 static int
-ctx_sink_unmute(lua_State *T)
+ctx_set_sink_unmute(lua_State *T)
 {
-	return ctx_set_sink_mute(T, 0);
+	return ctx__set_sink_mute(T, 0);
 }
 
 static int

@@ -309,12 +309,12 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.client_info = <ctx_client_info> */
 	lua_pushcfunction(L, ctx_client_info);
 	lua_setfield(L, -2, "client_info");
-	/* mt.sink_mute = <ctx_sink_mute> */
-	lua_pushcfunction(L, ctx_sink_mute);
-	lua_setfield(L, -2, "sink_mute");
-	/* mt.sink_unmute = <ctx_sink_unmute> */
-	lua_pushcfunction(L, ctx_sink_unmute);
-	lua_setfield(L, -2, "sink_unmute");
+	/* mt.set_sink_mute = <ctx_set_sink_mute> */
+	lua_pushcfunction(L, ctx_set_sink_mute);
+	lua_setfield(L, -2, "set_sink_mute");
+	/* mt.set_sink_unmute = <ctx_set_sink_unmute> */
+	lua_pushcfunction(L, ctx_set_sink_unmute);
+	lua_setfield(L, -2, "set_sink_unmute");
 	/* mt.set_sink_volume = <ctx_set_sink_volume> */
 	lua_pushcfunction(L, ctx_set_sink_volume);
 	lua_setfield(L, -2, "set_sink_volume");
@@ -372,6 +372,13 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	set_mask_constant(L, ALL);
 	lua_setfield(L, -2, "mask");
 
+	/* create volume table */
+	lua_createtable(L, 0, 2);
+	lua_pushnumber(L, PA_VOLUME_MUTED);
+	lua_setfield(L, -2, "MUTED");
+	lua_pushnumber(L, PA_VOLUME_NORM);
+	lua_setfield(L, -2, "NORM");
+	lua_setfield(L, -2, "volume");
 
 	return 1;
 }
