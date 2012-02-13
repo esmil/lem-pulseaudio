@@ -31,6 +31,7 @@ ctx_cvolume_check(lua_State *T, int idx, pa_cvolume *cvol)
 	for (i = 0; i < len; i++) {
 		lua_rawgeti(T, idx, i+1);
 		cvol->values[i] = lua_tonumber(T, -1);
+		lua_pop(T, 1);
 	}
 
 	cvol->channels = len;
@@ -187,14 +188,202 @@ ctx_set_sink_port(lua_State *T)
 /*
  * Sources
  */
+static int
+ctx__set_source_mute(lua_State *T, int mute)
+{
+	struct ctx *ctx;
+	int type;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	type = lua_type(T, 2);
+	if (lua_gettop(T) < 2 || (type != LUA_TNUMBER && type != LUA_TSTRING))
+		return luaL_argerror(T, 2, "expected number or string");
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	switch (type) {
+	case LUA_TNUMBER:
+		{
+			uint32_t idx = lua_tonumber(T, 2);
+
+			lua_settop(T, 1);
+			o = pa_context_set_source_mute_by_index(ctx->handle,
+					idx, mute, ctx_success_cb, T);
+		}
+		break;
+
+	case LUA_TSTRING:
+		{
+			const char *name = lua_tostring(T, 2);
+
+			lua_settop(T, 1);
+			o = pa_context_set_source_mute_by_name(ctx->handle,
+					name, mute, ctx_success_cb, T);
+		}
+		break;
+	}
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
+
+static int
+ctx_set_source_mute(lua_State *T)
+{
+	return ctx__set_source_mute(T, 1);
+}
+
+static int
+ctx_set_source_unmute(lua_State *T)
+{
+	return ctx__set_source_mute(T, 0);
+}
+
+static int
+ctx_set_source_volume(lua_State *T)
+{
+	struct ctx *ctx;
+	int type;
+	pa_cvolume cvol;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	type = lua_type(T, 2);
+	if (lua_gettop(T) < 2 || (type != LUA_TNUMBER && type != LUA_TSTRING))
+		return luaL_argerror(T, 2, "expected number or string");
+	ctx_cvolume_check(T, 3, &cvol);
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	switch (type) {
+	case LUA_TNUMBER:
+		{
+			uint32_t idx = lua_tonumber(T, 2);
+
+			lua_settop(T, 1);
+			o = pa_context_set_source_volume_by_index(ctx->handle,
+					idx, &cvol, ctx_success_cb, T);
+		}
+		break;
+
+	case LUA_TSTRING:
+		{
+			const char *name = lua_tostring(T, 2);
+
+			lua_settop(T, 1);
+			o = pa_context_set_source_volume_by_name(ctx->handle,
+					name, &cvol, ctx_success_cb, T);
+		}
+		break;
+	}
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
+
+static int
+ctx_set_source_port(lua_State *T)
+{
+	struct ctx *ctx;
+	int type;
+	const char *port;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	type = lua_type(T, 2);
+	if (lua_gettop(T) < 2 || (type != LUA_TNUMBER && type != LUA_TSTRING))
+		return luaL_argerror(T, 2, "expected number or string");
+	port = luaL_checkstring(T, 3);
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	switch (type) {
+	case LUA_TNUMBER:
+		{
+			uint32_t idx = lua_tonumber(T, 2);
+
+			lua_settop(T, 1);
+			o = pa_context_set_source_port_by_index(ctx->handle,
+					idx, port, ctx_success_cb, T);
+		}
+		break;
+
+	case LUA_TSTRING:
+		{
+			const char *name = lua_tostring(T, 2);
+
+			lua_settop(T, 1);
+			o = pa_context_set_source_port_by_name(ctx->handle,
+					name, port, ctx_success_cb, T);
+		}
+		break;
+	}
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
 
 /*
  * Sink Inputs
  */
 
+static int
+ctx_kill_sink_input(lua_State *T)
+{
+	struct ctx *ctx;
+	uint32_t idx;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	idx = luaL_checknumber(T, 2);
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	o = pa_context_kill_sink_input(ctx->handle, idx, ctx_success_cb, T);
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
+
 /*
  * Source Outputs
  */
+
+static int
+ctx_kill_source_output(lua_State *T)
+{
+	struct ctx *ctx;
+	uint32_t idx;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	idx = luaL_checknumber(T, 2);
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	o = pa_context_kill_source_output(ctx->handle, idx, ctx_success_cb, T);
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
 
 /*
  * Samples
@@ -210,7 +399,10 @@ ctx_load_module_cb(pa_context *c, uint32_t idx, void *userdata)
 
 	(void)c;
 
-	lua_pushnumber(T, idx);
+	if (idx == PA_INVALID_INDEX)
+		lua_pushnil(T);
+	else
+		lua_pushnumber(T, idx);
 	lem_queue(T, 1);
 }
 
@@ -238,17 +430,6 @@ ctx_load_module(lua_State *T)
 	return lua_yield(T, lua_gettop(T));
 }
 
-static void
-ctx_unload_module_cb(pa_context *c, int success, void *userdata)
-{
-	lua_State *T = userdata;
-
-	(void)c;
-
-	lua_pushboolean(T, success);
-	lem_queue(T, 1);
-}
-
 static int
 ctx_unload_module(lua_State *T)
 {
@@ -266,7 +447,7 @@ ctx_unload_module(lua_State *T)
 	}
 
 	lua_settop(T, 1);
-	o = pa_context_unload_module(ctx->handle, idx, ctx_unload_module_cb, T);
+	o = pa_context_unload_module(ctx->handle, idx, ctx_success_cb, T);
 	pa_operation_unref(o);
 	return lua_yield(T, lua_gettop(T));
 }
@@ -274,3 +455,25 @@ ctx_unload_module(lua_State *T)
 /*
  * Clients
  */
+
+static int
+ctx_kill_client(lua_State *T)
+{
+	struct ctx *ctx;
+	uint32_t idx;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	idx = luaL_checknumber(T, 2);
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	o = pa_context_kill_client(ctx->handle, idx, ctx_success_cb, T);
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
