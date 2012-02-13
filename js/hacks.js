@@ -27,7 +27,7 @@ var state = {},
 
             for (i = 0, ilen = sink.length; i < ilen; i++) {
                 s = sink[i]
-                r.push('<h4>', s.description, '</h4><p>Volume:');
+                r.push('<h3>', s.description, '</h3><p>Volume:');
                 for (j = 0, jlen = s.volume.length; j < jlen; j++) {
                     v = s.volume[j];
                     r.push(' ', v.name, ':', volToPercent(v.value), '%');
@@ -50,7 +50,7 @@ var state = {},
 
             for (i = 0, ilen = source.length; i < ilen; i++) {
                 s = source[i]
-                r.push('<h4>', s.description, '</h4><p>Volume:');
+                r.push('<h3>', s.description, '</h3><p>Volume:');
                 for (j = 0, jlen = s.volume.length; j < jlen; j++) {
                     v = s.volume[j];
                     r.push(' ', v.name, ':', volToPercent(v.value), '%');
@@ -73,14 +73,18 @@ var state = {},
 
             for (i = 0, ilen = sink_input.length; i < ilen; i++) {
                 si = sink_input[i];
-                r.push('<h4>', s.description, '</h4>');
-                if (si.has_volume) {
+                r.push('<h3>', si.name, '</h3>');
+                if (si.volume) {
                     r.push('<p>Volume:');
                     for (j = 0, jlen = si.volume.length; j < jlen; j++) {
                         v = si.volume[j];
                         r.push(' ', v.name, ':', v.value);
                     }
                     r.push('</p>');
+                    for (j = 0, jlen = si.volume.length; j < jlen; j++) {
+                        v = si.volume[j];
+                        r.push('<div id="sink-input-', si.index, '-', v.name, '"></div>');
+                    }
                 }
             }
             return r.join('');
@@ -91,7 +95,7 @@ var state = {},
 
             for (i = 0, ilen = source_output.length; i < ilen; i++) {
                 so = source_output[i];
-                r.push('<h4>', so.description, '</h4>');
+                r.push('<h3>', so.description, '</h3>');
             }
             return r.join('');
         },
@@ -101,7 +105,7 @@ var state = {},
 
             for (i = 0, ilen = sample.length; i < ilen; i++) {
                 s = sample[i];
-                r.push('<h4>', s.description, '</h4>');
+                r.push('<h3>', s.description, '</h3>');
             }
             return r.join('');
         },
@@ -111,7 +115,7 @@ var state = {},
 
             for (i = 0, ilen = module.length; i < ilen; i++) {
                 m = module[i];
-                r.push('<h4>', m.name, '</h4><p>',
+                r.push('<h3>', m.name, '</h3><p>',
                     m.description, '<br />',
                     m.author, '<br />',
                     m.version, '</p>');
@@ -124,19 +128,13 @@ var state = {},
 
             for (i = 0, ilen = client.length; i < ilen; i++) {
                 c = client[i];
-                r.push('<h4>', c.name, '</h4>');
+                r.push('<h3>', c.name, '</h3>');
             }
             return r.join('');
         }
     },
     slider_callback = function(typ, idx, name) {
         return function(event, ui) {
-            /*
-            $.ajax({
-                url: '/' + typ + '/' + idx + '/volume/' + ui.value,
-                method: 'GET',
-            });
-            */
             var obj = {};
             obj[name] = ui.value;
             $.post('/' + typ + '/' + idx, obj);
@@ -175,7 +173,26 @@ var state = {},
                         min: 0,
                         max: 65536,
                         value: v.value,
-                        change: slider_callback('source', s.index),
+                        change: slider_callback('source', s.index, v.name),
+                    });
+                }
+            }
+        },
+        sink_input: function(sink_input) {
+            var si, volume, v,
+                i, ilen,
+                j, jlen;
+
+            for (i = 0, ilen = sink_input.length; i < ilen; i++) {
+                si = sink_input[i];
+                volume = si.volume;
+                for (j = 0, jlen = volume.length; j < jlen; j++) {
+                    v = volume[j];
+                    $('#sink-input-' + si.index + '-' + v.name).slider({
+                        min: 0,
+                        max: 65536,
+                        value: v.value,
+                        change: slider_callback('sink-input', si.index, v.name),
                     });
                 }
             }
@@ -202,20 +219,10 @@ $(function() {
             }
         }
         raw.innerHTML = '<![CDATA[' + JSON.stringify(state, null, ' ') + ']]>';
-        $.ajax({
-            url: '/poll/' + ret.stamp,
-            method: 'GET',
-            dataType: 'json',
-            success: onDataReceived
-        });
+        $.get('/poll/' + ret.stamp, onDataReceived, 'json');
     };
 
-    $.ajax({
-        url: '/poll/0',
-        method: 'GET',
-        dataType: 'json',
-        success: onDataReceived
-    });
+    $.get('/poll/0', onDataReceived, 'json');
 });
 
 // vim: set ts=4 sw=4 et:

@@ -5,7 +5,7 @@ local gettimeofday = require 'gettimeofday'
 local hathaway     = require 'lem.hathaway'
 local pa           = require 'lem.pulseaudio'
 
-local assert = assert
+local assert, tonumber = assert, tonumber
 
 local c = assert(pa.connect('LEM PulseAudio TestApp'))
 
@@ -248,27 +248,6 @@ GET('/', function(req, res)
 	res.file = 'index.html'
 end)
 
-GETM('^/sink/(%d+)/volume/(%d+)$', function(req, res, index, vol)
-	index = tonumber(index)
-	vol = tonumber(vol)
-	c:set_sink_volume(index, { vol, vol })
-end)
-
-GETM('^/sink/(%d+)/mute$', function(req, res, index)
-	index = tonumber(index)
-	c:set_sink_mute(index)
-end)
-
-GETM('^/sink/(%d+)/unmute$', function(req, res, index)
-	index = tonumber(index)
-	c:set_sink_unmute(index)
-end)
-
-GETM('^/module/(%d+)/unload$', function(req, res, index)
-	index = tonumber(index)
-	c:unload_module(index)
-end)
-
 local function addchanged(res, stamp)
 	local ret = false
 	for k, v in pairs(state) do
@@ -297,9 +276,72 @@ GETM('^/poll/(%d+%.?%d*)$', function(req, res, stamp)
 	res:add('"stamp":"%.4f"}', gettimeofday())
 end)
 
+local parseform
+do
+	local char = string.char
+	local function urldecode(str)
+		return str:gsub('+', ' '):gsub('%%(%x%x)', function(str)
+			return char(tonumber(str, 16))
+		end)
+	end
+
+	function parseform(str)
+		local t = {}
+		for k, v in str:gmatch('([^&]+)=([^&]*)') do
+			t[urldecode(k)] = urldecode(v)
+		end
+		return t
+	end
+end
+
 POSTM('^/sink/(%d+)$', function(req, res, idx)
-	print(idx)
-	print(req:body())
+	idx = tonumber(idx)
+	local body = req:body()
+	if not body then return end
+
+	local sink = state.sink.data[idx]
+	if not sink then return end
+
+	body = parseform(body)
+	if body.mute ~= nil then
+		if body.mute == 'true' then
+			c:set_sink_mute(idx)
+		else
+			c:set_sink_unmute(idx)
+		end
+	else
+		local volume, cm = sink.volume, sink.channel_map
+		local r = {}
+		for i = 1, #volume do
+			r[i] = tonumber(body[pa.position_name[cm[i]]]) or volume[i]
+		end
+		c:set_sink_volume(idx, r)
+	end
+end)
+
+POSTM('^/source/(%d+)$', function(req, res, idx)
+	idx = tonumber(idx)
+	local body = req:body()
+	if not body then return end
+
+	local source = state.source.data[idx]
+	if not source then return end
+
+	body = parseform(body)
+	if body.mute ~= nil then
+		if body.mute == 'true' then
+			c:set_source_mute(idx)
+		else
+			c:set_source_unmute(idx)
+		end
+	else
+		local volume, cm = source.volume, source.channel_map
+		local r = {}
+		for i = 1, #volume do
+			r[i] = body[pa.position_name[cm[i]]] or volume[i]
+		end
+		c:set_source_volume(idx, r)
+	end
 end)
 
 GETM('^/(js/.+)$', function(req, res, file)
@@ -308,7 +350,11 @@ GETM('^/(js/.+)$', function(req, res, file)
 end)
 
 GETM('^/(css/.+)$', function(req, res, file)
-	res.headers['Content-Type'] = 'text/css; charset=UTF-8'
+	if file:match('%.png$') then
+		res.headers['Content-Type'] = 'image/png'
+	else
+		res.headers['Content-Type'] = 'text/css; charset=UTF-8'
+	end
 	res.file = file
 end)
 
