@@ -32,6 +32,18 @@ do
 		res:add(']')
 	end
 
+	local function volume_add(volume, map, res)
+		if not volume then return end
+
+		res:add('"volume":[{"name":"%s","value":%u}',
+			pa.position_name[map[1]], volume[1])
+		for i = 2, #volume do
+			res:add(',{"name":"%s","value":%u}',
+				pa.position_name[map[i]], volume[i])
+		end
+		res:add('],')
+	end
+
 	local now = gettimeofday()
 	state = {
 		server = {
@@ -71,14 +83,7 @@ do
 						"description":"%s",\z
 						"mute":%s,',
 						t.index, t.description, t.mute)
-					local volume = t.volume
-					if volume then
-						res:add('"volume":[%u', volume[1])
-						for i = 2, #volume do
-							res:add(',%u', volume[i])
-						end
-						res:add('],')
-					end
+					volume_add(t.volume, t.channel_map, res)
 					res:add('"base_volume":%u}', t.base_volume)
 				end)
 			end,
@@ -104,14 +109,7 @@ do
 					if t.monitor_of_sink then
 						res:add('"monitor_of_sink":%u,', t.monitor_of_sink)
 					end
-					local volume = t.volume
-					if volume then
-						res:add('"volume":[%u', volume[1])
-						for i = 2, #volume do
-							res:add(',%u', volume[i])
-						end
-						res:add('],')
-					end
+					volume_add(t.volume, t.channel_map, res)
 					res:add('"base_volume":%u}', t.base_volume)
 				end)
 			end,
@@ -136,14 +134,7 @@ do
 						"has_volume":%s,',
 						t.index, t.name,
 						t.mute, t.has_volume)
-					local volume = t.volume
-					if volume then
-						res:add('"volume":[%u', volume[1])
-						for i = 2, #volume do
-							res:add(',%u', volume[i])
-						end
-						res:add('],')
-					end
+					volume_add(t.volume, t.channel_map, res)
 					res:add('"corked":%s}', t.corked)
 				end)
 			end,
@@ -247,46 +238,35 @@ end)
 
 hathaway.import()
 
-GET('/index.html', function(req, res)
-	res.headers['Content-Type'] = 'text/html; charset=UTF-8'
+GET('/', function(req, res)
+	local accept = req.headers['Accept']
+	if accept and accept:match('application/xhtml%+xml') then
+		res.headers['Content-Type'] = 'application/xhtml+xml; charset=UTF-8'
+	else
+		res.headers['Content-Type'] = 'text/html; charset=UTF-8'
+	end
 	res.file = 'index.html'
 end)
 
-MATCH('^/sink/(%d+)/volume/(%d+)$', function(req, res, index, vol)
+GETM('^/sink/(%d+)/volume/(%d+)$', function(req, res, index, vol)
 	index = tonumber(index)
 	vol = tonumber(vol)
 	c:set_sink_volume(index, { vol, vol })
 end)
 
-MATCH('^/sink/(%d+)/mute$', function(req, res, index)
+GETM('^/sink/(%d+)/mute$', function(req, res, index)
 	index = tonumber(index)
 	c:set_sink_mute(index)
 end)
 
-MATCH('^/sink/(%d+)/unmute$', function(req, res, index)
+GETM('^/sink/(%d+)/unmute$', function(req, res, index)
 	index = tonumber(index)
 	c:set_sink_unmute(index)
 end)
 
-MATCH('^/module/(%d+)/unload$', function(req, res, index)
+GETM('^/module/(%d+)/unload$', function(req, res, index)
 	index = tonumber(index)
 	c:unload_module(index)
-end)
-
-MATCH('^/(js/.+)$', function(req, res, file)
-	if req.method ~= 'GET' and req.method ~= 'HEAD' then
-		return hathaway.method_not_allowed(req, res)
-	end
-	res.headers['Content-Type'] = 'text/javascript; charset=UTF-8'
-	res.file = file
-end)
-
-MATCH('^/(css/.+)$', function(req, res, file)
-	if req.method ~= 'GET' and req.method ~= 'HEAD' then
-		return hathaway.method_not_allowed(req, res)
-	end
-	res.headers['Content-Type'] = 'text/css; charset=UTF-8'
-	res.file = file
 end)
 
 local function addchanged(res, stamp)
@@ -302,10 +282,7 @@ local function addchanged(res, stamp)
 	return ret
 end
 
-MATCH('^/poll/(%d+%.?%d*)$', function(req, res, stamp)
-	if req.method ~= 'GET' and req.method ~= 'HEAD' then
-		return hathaway.method_not_allowed(req, res)
-	end
+GETM('^/poll/(%d+%.?%d*)$', function(req, res, stamp)
 	res.headers['Content-Type'] = 'text/javascript; charset=UTF-8'
 	res.headers['Cache-Control'] = 'max-age=0, must-revalidate'
 	res:add('{')
@@ -318,6 +295,21 @@ MATCH('^/poll/(%d+%.?%d*)$', function(req, res, stamp)
 		addchanged(res, stamp)
 	end
 	res:add('"stamp":"%.4f"}', gettimeofday())
+end)
+
+POSTM('^/sink/(%d+)$', function(req, res, idx)
+	print(idx)
+	print(req:body())
+end)
+
+GETM('^/(js/.+)$', function(req, res, file)
+	res.headers['Content-Type'] = 'text/javascript; charset=UTF-8'
+	res.file = file
+end)
+
+GETM('^/(css/.+)$', function(req, res, file)
+	res.headers['Content-Type'] = 'text/css; charset=UTF-8'
+	res.file = file
 end)
 
 hathaway.debug = print
