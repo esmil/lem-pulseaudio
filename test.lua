@@ -71,6 +71,7 @@ for k, client in pairs(assert(c:client_info())) do
 	end
 end
 
+--[[
 assert(c:subscribe(pa.mask.ALL))
 local lookup = {
 	sink          = function(c, typ, idx) return c:sink_info(idx) end,
@@ -94,6 +95,13 @@ while true do
 			end
 		end
 	end
+end
+--]]
+for i = 0, 20 do
+	print(pa.position_name[i])
+end
+for i = 0, 20 do
+	print(pa.position_name[i])
 end
 
 assert(c:disconnect())

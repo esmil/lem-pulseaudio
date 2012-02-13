@@ -255,6 +255,29 @@ ctx_connect(lua_State *T)
 	return lua_yield(T, 0);
 }
 
+static int
+ctx_position_name(lua_State *T)
+{
+	pa_channel_position_t pos;
+
+	if (lua_type(T, 2) != LUA_TNUMBER)
+		return 0;
+
+	pos = lua_tonumber(T, 2);
+	if (pos > PA_CHANNEL_POSITION_MAX)
+		return 0;
+
+	lua_pushstring(T, pa_channel_position_to_string(pos));
+	lem_debug("found %s", lua_tostring(T, -1));
+
+	/* insert string so we don't need to be called again */
+	lua_pushvalue(T, 2);
+	lua_pushvalue(T, -2);
+	lua_rawset(T, 1);
+
+	return 1;
+}
+
 #define set_mask_constant(L, name) \
 	lua_pushnumber(L, PA_SUBSCRIPTION_MASK_##name);\
 	lua_setfield(L, -2, #name)
@@ -379,6 +402,15 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	lua_pushnumber(L, PA_VOLUME_NORM);
 	lua_setfield(L, -2, "NORM");
 	lua_setfield(L, -2, "volume");
+
+	/* create position_name table */
+	lua_createtable(L, 0, 0);
+	/* setmetatable(position_name, { __index = <ctx_position_name> }) */
+	lua_createtable(L, 0, 1);
+	lua_pushcfunction(L, ctx_position_name);
+	lua_setfield(L, -2, "__index");
+	lua_setmetatable(L, -2);
+	lua_setfield(L, -2, "position_name");
 
 	return 1;
 }

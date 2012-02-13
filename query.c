@@ -28,17 +28,16 @@ ctx_sample_spec_push(lua_State *T, const pa_sample_spec *spec)
 }
 
 static void
-ctx_channel_map_push(lua_State *T, const pa_channel_map *map)
+ctx_channel_map_push(lua_State *T, const pa_channel_map *cm)
 {
-	const char *mapname = pa_channel_map_to_name(map);
+	int channels = cm->channels;
+	int i = 0;
 
-	if (mapname)
-		lua_pushstring(T, mapname);
-	else {
-		char buf[PA_CHANNEL_MAP_SNPRINT_MAX];
+	lua_createtable(T, channels, 0);
 
-		pa_channel_map_snprint(buf, PA_CHANNEL_MAP_SNPRINT_MAX, map);
-		lua_pushstring(T, buf);
+	while (i < channels) {
+		lua_pushnumber(T, cm->map[i++]);
+		lua_rawseti(T, -2, i);
 	}
 }
 
@@ -615,7 +614,7 @@ ctx_sink_input_info(lua_State *T)
 static void
 ctx_source_output_info_push(lua_State *T, const pa_source_output_info *info)
 {
-	lua_createtable(T, 0, 19);
+	lua_createtable(T, 0, 18);
 	lua_pushnumber(T, info->index);
 	lua_setfield(T, -2, "index");
 	lua_pushstring(T, info->name);
@@ -634,8 +633,6 @@ ctx_source_output_info_push(lua_State *T, const pa_source_output_info *info)
 	lua_setfield(T, -2, "sample_spec");
 	ctx_channel_map_push(T, &info->channel_map);
 	lua_setfield(T, -2, "channel_map");
-	ctx_cvolume_push(T, &info->volume);
-	lua_setfield(T, -2, "volume");
 	lua_pushnumber(T, info->buffer_usec);
 	lua_setfield(T, -2, "buffer_usec");
 	lua_pushnumber(T, info->source_usec);
