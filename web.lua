@@ -294,13 +294,44 @@ do
 	end
 end
 
+local function update_volume(vol, cm, body)
+	local r, changed = {}, false
+	for i = 1, #vol do
+		local n = tonumber(body[pa.position_name[cm[i]]])
+		if n then
+			r[i] = n
+			changed = true
+		else
+			r[i] = vol[i]
+		end
+	end
+	if changed then return r end
+	return nil
+end
+
+local function scale_volume(vol, n)
+	if not n then return nil end
+	local len = #vol
+	local s = 0
+	for i = 1, len do
+		local vi = vol[i]
+		if vi > s then s = vi end
+	end
+	s = n / s
+	local r = {}
+	for i = 1, len do
+		r[i] = s * vol[i]
+	end
+	return r
+end
+
 POSTM('^/sink/(%d+)$', function(req, res, idx)
 	idx = tonumber(idx)
+	local sink = state.sink.data[idx]
+	if not sink then hathaway.not_found(req, res) return end
+
 	local body = req:body()
 	if not body then return end
-
-	local sink = state.sink.data[idx]
-	if not sink then return end
 
 	body = parseform(body)
 	if body.mute ~= nil then
@@ -310,22 +341,25 @@ POSTM('^/sink/(%d+)$', function(req, res, idx)
 			c:set_sink_unmute(idx)
 		end
 	else
-		local volume, cm = sink.volume, sink.channel_map
-		local r = {}
-		for i = 1, #volume do
-			r[i] = tonumber(body[pa.position_name[cm[i]]]) or volume[i]
+		local new
+		if body.all then
+			new = scale_volume(sink.volume, tonumber(body.all))
+		else
+			new = update_volume(sink.volume, sink.channel_map, body)
 		end
-		c:set_sink_volume(idx, r)
+		if new then
+			c:set_sink_volume(idx, new)
+		end
 	end
 end)
 
 POSTM('^/source/(%d+)$', function(req, res, idx)
 	idx = tonumber(idx)
+	local source = state.source.data[idx]
+	if not source then hathaway.not_found(req, res) return end
+
 	local body = req:body()
 	if not body then return end
-
-	local source = state.source.data[idx]
-	if not source then return end
 
 	body = parseform(body)
 	if body.mute ~= nil then
@@ -335,13 +369,50 @@ POSTM('^/source/(%d+)$', function(req, res, idx)
 			c:set_source_unmute(idx)
 		end
 	else
-		local volume, cm = source.volume, source.channel_map
-		local r = {}
-		for i = 1, #volume do
-			r[i] = body[pa.position_name[cm[i]]] or volume[i]
+		local new
+		if body.all then
+			new = scale_volume(source.volume, tonumber(body.all))
+		else
+			new = update_volume(source.volume, source.channel_map, body)
 		end
-		c:set_source_volume(idx, r)
+		if new then
+			c:set_source_volume(idx, new)
+		end
 	end
+end)
+
+POSTM('^/sink%-input/(%d+)$', function(req, res, idx)
+	idx = tonumber(idx)
+	local sink_input = state.sink_input.data[idx]
+	if not sink_input then hathaway.not_found(req, res) return end
+
+	local body = req:body()
+	if not body then return end
+
+	body = parseform(body)
+	if body.mute ~= nil then
+		if body.mute == 'true' then
+			c:set_sink_input_mute(idx)
+		else
+			c:set_sink_input_unmute(idx)
+		end
+	end
+end)
+
+DELETEM('^/sink%-input/(%d+)$', function(req, res, idx)
+	idx = tonumber(idx)
+	local sink_input = state.sink_input.data[idx]
+	if not sink_input then hathaway.not_found(req, res) return end
+
+	c:kill_sink_input(idx)
+end)
+
+DELETEM('^/source%-output/(%d+)$', function(req, res, idx)
+	idx = tonumber(idx)
+	local source_output = state.sink_input.data[idx]
+	if not source_output then hathaway.not_found(req, res) return end
+
+	c:kill_source_output(idx)
 end)
 
 GETM('^/(js/.+)$', function(req, res, file)

@@ -219,10 +219,10 @@ $(function() {
             }
         }
         raw.innerHTML = '<![CDATA[' + JSON.stringify(state, null, ' ') + ']]>';
-        $.get('/poll/' + ret.stamp, onDataReceived, 'json');
+        $.getJSON('/poll/' + ret.stamp, onDataReceived);
     };
 
-    $.get('/poll/0', onDataReceived, 'json');
+    $.getJSON('/poll/0', onDataReceived);
 });
 
 // vim: set ts=4 sw=4 et:
