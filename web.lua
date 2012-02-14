@@ -240,11 +240,14 @@ hathaway.import()
 
 GET('/', function(req, res)
 	local accept = req.headers['Accept']
+	--[[
 	if accept and accept:match('application/xhtml%+xml') then
-		res.headers['Content-Type'] = 'application/xhtml+xml; charset=UTF-8'
+		--res.headers['Content-Type'] = 'application/xhtml+xml; charset=UTF-8'
+		res.headers['Content-Type'] = 'application/xml; charset=UTF-8'
 	else
+	--]]
 		res.headers['Content-Type'] = 'text/html; charset=UTF-8'
-	end
+	--end
 	res.file = 'index.html'
 end)
 
@@ -317,7 +320,7 @@ local function scale_volume(vol, n)
 		local vi = vol[i]
 		if vi > s then s = vi end
 	end
-	s = n / s
+	s = (s + n) / s
 	local r = {}
 	for i = 1, len do
 		r[i] = s * vol[i]
@@ -342,8 +345,8 @@ POSTM('^/sink/(%d+)$', function(req, res, idx)
 		end
 	else
 		local new
-		if body.all then
-			new = scale_volume(sink.volume, tonumber(body.all))
+		if body.rel then
+			new = scale_volume(sink.volume, tonumber(body.rel))
 		else
 			new = update_volume(sink.volume, sink.channel_map, body)
 		end
@@ -370,8 +373,8 @@ POSTM('^/source/(%d+)$', function(req, res, idx)
 		end
 	else
 		local new
-		if body.all then
-			new = scale_volume(source.volume, tonumber(body.all))
+		if body.rel then
+			new = scale_volume(source.volume, tonumber(body.rel))
 		else
 			new = update_volume(source.volume, source.channel_map, body)
 		end
@@ -396,23 +399,60 @@ POSTM('^/sink%-input/(%d+)$', function(req, res, idx)
 		else
 			c:set_sink_input_unmute(idx)
 		end
+	elseif body.kill then
+		c:kill_sink_input(idx)
+	else
+		local new
+		if body.rel then
+			new = scale_volume(sink_input.volume, tonumber(body.rel))
+		else
+			new = update_volume(sink_input.volume, sink_input.channel_map, body)
+		end
+		if new then
+			c:set_sink_input_volume(idx, new)
+		end
 	end
 end)
 
-DELETEM('^/sink%-input/(%d+)$', function(req, res, idx)
-	idx = tonumber(idx)
-	local sink_input = state.sink_input.data[idx]
-	if not sink_input then hathaway.not_found(req, res) return end
-
-	c:kill_sink_input(idx)
-end)
-
-DELETEM('^/source%-output/(%d+)$', function(req, res, idx)
+POSTM('^/source%-output/(%d+)$', function(req, res, idx)
 	idx = tonumber(idx)
 	local source_output = state.sink_input.data[idx]
 	if not source_output then hathaway.not_found(req, res) return end
 
-	c:kill_source_output(idx)
+	local body = req:body()
+	if not body then return end
+
+	if body.kill then
+		c:kill_source_output(idx)
+	end
+end)
+
+POSTM('^/module/(%d+)$', function(req, res, idx)
+	idx = tonumber(idx)
+	local module = state.module.data[idx]
+	if not module then hathaway.not_found(req, res) return end
+
+	local body = req:body()
+	if not body then return end
+
+	body = parseform(body)
+	if body.unload then
+		c:unload_module(idx)
+	end
+end)
+
+POSTM('^/client/(%d+)$', function(req, res, idx)
+	idx = tonumber(idx)
+	local client = state.client.data[idx]
+	if not client then hathaway.not_found(req, res) return end
+
+	local body = req:body()
+	if not body then return end
+
+	body = parseform(body)
+	if body.kill then
+		c:kill_client(idx)
+	end
 end)
 
 GETM('^/(js/.+)$', function(req, res, file)
@@ -421,11 +461,12 @@ GETM('^/(js/.+)$', function(req, res, file)
 end)
 
 GETM('^/(css/.+)$', function(req, res, file)
-	if file:match('%.png$') then
-		res.headers['Content-Type'] = 'image/png'
-	else
-		res.headers['Content-Type'] = 'text/css; charset=UTF-8'
-	end
+	res.headers['Content-Type'] = 'text/css; charset=UTF-8'
+	res.file = file
+end)
+
+GETM('^/(img/.+)$', function(req, res, file)
+	res.headers['Content-Type'] = 'image/png'
 	res.file = file
 end)
 

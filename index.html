@@ -1,41 +1,60 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html
-  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>LEM PulseAudio Test</title>
-	<link rel="stylesheet" href="css/ui-darkness/jquery-ui-1.8.17.custom.css" type="text/css" media="all" />
-</head>
-<body>
-	<script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
-	<script type="text/javascript" src="js/jquery-ui-1.8.17.custom.min.js"></script>
-	<script type="text/javascript" src="js/json2.js"></script>
-	<div id="tabs">
-		<ul>
-			<li><a href="#server">Server</a></li>
-			<li><a href="#sinks">Sinks</a></li>
-			<li><a href="#sources">Sources</a></li>
-			<li><a href="#sink-inputs">Sink Inputs</a></li>
-			<li><a href="#source-outputs">Source Outputs</a></li>
-			<li><a href="#samples">Samples</a></li>
-			<li><a href="#modules">Modules</a></li>
-			<li><a href="#clients">Clients</a></li>
-			<li><a href="#json">JSON</a></li>
-		</ul>
-		<div id="server"></div>
-		<div id="sinks"></div>
-		<div id="sources"></div>
-		<div id="sink-inputs"></div>
-		<div id="source-outputs"></div>
-		<div id="samples"></div>
-		<div id="modules"></div>
-		<div id="clients"></div>
-		<div id="json"><pre id="raw"></pre></div>
-	</div>
-	<script type="text/javascript" src="js/hacks.js"></script>
-</body>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <title>PulseAudio Volume Control</title>
+    <meta name="description" content=""/>
+    <meta name="author" content="Emil Renner Berthing"/>
+
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link href="/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/css/prettify.css" rel="stylesheet"/>
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="/">PulseAudio</a>
+          <ul class="nav">
+            <li class="active"><a data-toggle="tab" href="#server">Server</a></li>
+            <li><a data-toggle="tab" href="#sinks">Sinks</a></li>
+            <li><a data-toggle="tab" href="#sources">Sources</a></li>
+            <li><a data-toggle="tab" href="#sink-inputs">Sink Inputs</a></li>
+            <li><a data-toggle="tab" href="#source-outputs">Source Outputs</a></li>
+            <li><a data-toggle="tab" href="#samples">Samples</a></li>
+            <li><a data-toggle="tab" href="#modules">Modules</a></li>
+            <li><a data-toggle="tab" href="#clients">Clients</a></li>
+            <li><a data-toggle="tab" href="#json">JSON</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="tab-content">
+        <div class="tab-pane active" id="server"></div>
+        <div class="tab-pane" id="sinks"></div>
+        <div class="tab-pane" id="sources"></div>
+        <div class="tab-pane" id="sink-inputs"></div>
+        <div class="tab-pane" id="source-outputs"></div>
+        <div class="tab-pane" id="samples"></div>
+        <div class="tab-pane" id="modules"></div>
+        <div class="tab-pane" id="clients"></div>
+        <div class="tab-pane" id="json"><pre class="prettyprint lang-js" id="raw"></pre></div>
+      </div>
+    </div>
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+	  <script type="text/javascript" src="/js/jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/js/prettify.js"></script>
+    <script type="text/javascript" src="/js/hacks.js"></script>
+  </body>
 </html>
 
-<!-- vim: ts=2 sw=2 noet:
+<!-- vim: ts=2 sw=2 et:
 -->

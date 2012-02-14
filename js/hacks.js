@@ -9,8 +9,53 @@ var state = {},
         module:        document.getElementById('modules'),
         client:        document.getElementById('clients')
     },
+    mute = function(typ, idx, v) {
+        $.post('/' + typ + '/' + idx, { mute: v });
+    },
+    volUp = function(typ, idx) {
+        $.post('/' + typ + '/' + idx, { rel: 1000 });
+    },
+    volDown = function(typ, idx) {
+        $.post('/' + typ + '/' + idx, { rel: -1000 });
+    },
+    kill = function(typ, idx) {
+        $.post('/' + typ + '/' + idx, { kill: true });
+    },
+    hmm = function(e) {
+        console.log(e);
+    },
+    unload = function(idx) {
+        $.post('/module/' + idx, { unload: true });
+    },
     volToPercent = function(vol) {
         return Math.round(100 * vol / 65536);
+    },
+    addVolumeControl = function(r, typ, idx, mute, vol) {
+        var v,
+            i, ilen;
+
+        if (vol) {
+            for (i = 0, ilen = vol.length; i < ilen; i++) {
+                v = vol[i];
+                r.push('<p>', v.name, ' ', volToPercent(v.value),
+                        '% <div class="progress"><div class="bar" style="width:',
+                        volToPercent(v.value), '%"></div></div></p>');
+            }
+        }
+
+        r.push('<div class="btn-toolbar"><div class="btn-group"><button class="btn');
+        if (mute) {
+            r.push(' active');
+        }
+        r.push('" id="', typ, '-', idx, '-mute" onclick="mute(\'', typ, '\',',
+                idx, ',', !mute,
+                ')"><i class="icon-volume-off"></i>&nbsp;Mute</button></div>');
+        if (vol) {
+            r.push('<div class="btn-group"><button class="btn" onclick="volDown(\'',
+                typ, '\',', idx, ')"><i class="icon-volume-down"></i></button><button class="btn" onclick="volUp(\'',
+                typ, '\',', idx, ')"><i class="icon-volume-up"></i></button></div>');
+        }
+        r.push('</div>');
     },
     template = {
         server: function(s) {
@@ -21,71 +66,45 @@ var state = {},
                 + '</dl>';
         },
         sink: function(sink) {
-            var r = [], s, v,
-                i, ilen,
-                j, jlen;
+            var r = [], s,
+                i, ilen;
 
             for (i = 0, ilen = sink.length; i < ilen; i++) {
                 s = sink[i]
-                r.push('<h3>', s.description, '</h3><p>Volume:');
-                for (j = 0, jlen = s.volume.length; j < jlen; j++) {
-                    v = s.volume[j];
-                    r.push(' ', v.name, ':', volToPercent(v.value), '%');
-                }
-                r.push('</p>');
-                for (j = 0, jlen = s.volume.length; j < jlen; j++) {
-                    v = s.volume[j];
-                    r.push('<div id="sink-', s.index, '-', v.name, '"></div>');
-                }
+                r.push('<div class="alert alert-info"><h3>', s.description, '</h3>');
                 if (s.base_volume) {
                     r.push('<p>Base Volume: ', volToPercent(s.base_volume), '%</p>');
                 }
+                addVolumeControl(r, 'sink', s.index, s.mute, s.volume);
+                r.push('</div>');
             }
             return r.join('');
         },
         source: function(source) {
-            var r = [], s, v,
-                i, ilen,
-                j, jlen;
+            var r = [], s,
+                i, ilen;
 
             for (i = 0, ilen = source.length; i < ilen; i++) {
                 s = source[i]
-                r.push('<h3>', s.description, '</h3><p>Volume:');
-                for (j = 0, jlen = s.volume.length; j < jlen; j++) {
-                    v = s.volume[j];
-                    r.push(' ', v.name, ':', volToPercent(v.value), '%');
-                }
-                r.push('</p>');
-                for (j = 0, jlen = s.volume.length; j < jlen; j++) {
-                    v = s.volume[j];
-                    r.push('<div id="source-', s.index, '-', v.name, '"></div>');
-                }
+                r.push('<div class="alert alert-info"><h3>', s.description, '</h3>');
                 if (s.base_volume) {
                     r.push('<p>Base Volume: ', volToPercent(s.base_volume), '%</p>');
                 }
+                addVolumeControl(r, 'source', s.index, s.mute, s.volume);
+                r.push('</div>');
             }
             return r.join('');
         },
         sink_input: function(sink_input) {
-            var r = [], si, v,
-                i, ilen,
-                j, jlen;
+            var r = [], si,
+                i, ilen;
 
             for (i = 0, ilen = sink_input.length; i < ilen; i++) {
                 si = sink_input[i];
-                r.push('<h3>', si.name, '</h3>');
-                if (si.volume) {
-                    r.push('<p>Volume:');
-                    for (j = 0, jlen = si.volume.length; j < jlen; j++) {
-                        v = si.volume[j];
-                        r.push(' ', v.name, ':', v.value);
-                    }
-                    r.push('</p>');
-                    for (j = 0, jlen = si.volume.length; j < jlen; j++) {
-                        v = si.volume[j];
-                        r.push('<div id="sink-input-', si.index, '-', v.name, '"></div>');
-                    }
-                }
+                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'sink-input\',',
+                        si.index, ')">×</a><h3>', si.name, '</h3>');
+                addVolumeControl(r, 'sink-input', si.index, si.mute, si.volume);
+                r.push('</div>');
             }
             return r.join('');
         },
@@ -95,7 +114,10 @@ var state = {},
 
             for (i = 0, ilen = source_output.length; i < ilen; i++) {
                 so = source_output[i];
-                r.push('<h3>', so.description, '</h3>');
+                r.push('<div class="alert alert-info"><a class=close onclick="kill(\'source-output\',',
+                        so.index, ')">×</a><h3>', so.description, '</h3></div>');
+                addVolumeControl(r, 'source-output', s.index, s.mute, s.volume);
+                r.push('</div>');
             }
             return r.join('');
         },
@@ -115,10 +137,11 @@ var state = {},
 
             for (i = 0, ilen = module.length; i < ilen; i++) {
                 m = module[i];
-                r.push('<h3>', m.name, '</h3><p>',
-                    m.description, '<br />',
-                    m.author, '<br />',
-                    m.version, '</p>');
+                r.push('<div class="alert alert-info"><a class="close" onclick="unload(',
+                        m.index, ')">×</a><h3>', m.name, '</h3><p>',
+                        m.description, '<br/>',
+                        m.author, '<br/>',
+                        m.version, '</p></div>');
             }
             return r.join('');
         },
@@ -128,80 +151,17 @@ var state = {},
 
             for (i = 0, ilen = client.length; i < ilen; i++) {
                 c = client[i];
-                r.push('<h3>', c.name, '</h3>');
+                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'client\',',
+                        c.index, ')">×</a><h3>', c.name, '</h3></div>');
             }
             return r.join('');
-        }
-    },
-    slider_callback = function(typ, idx, name) {
-        return function(event, ui) {
-            var obj = {};
-            obj[name] = ui.value;
-            $.post('/' + typ + '/' + idx, obj);
-        };
-    },
-    render = {
-        sink: function(sink) {
-            var s, volume, v,
-                i, ilen,
-                j, jlen;
-
-            for (i = 0, ilen = sink.length; i < ilen; i++) {
-                s = sink[i];
-                volume = s.volume;
-                for (j = 0, jlen = volume.length; j < jlen; j++) {
-                    v = volume[j];
-                    $('#sink-' + s.index + '-' + v.name).slider({
-                        min: 0,
-                        max: 65536,
-                        value: v.value,
-                        change: slider_callback('sink', s.index, v.name),
-                    });
-                }
-            }
-        },
-        source: function(source) {
-            var s, v,
-                i, ilen,
-                j, jlen;
-
-            for (i = 0, ilen = source.length; i < ilen; i++) {
-                s = source[i];
-                for (j = 0, jlen = s.volume.length; j < jlen; j++) {
-                    v = s.volume[j];
-                    $('#source-' + s.index + '-' + v.name).slider({
-                        min: 0,
-                        max: 65536,
-                        value: v.value,
-                        change: slider_callback('source', s.index, v.name),
-                    });
-                }
-            }
-        },
-        sink_input: function(sink_input) {
-            var si, volume, v,
-                i, ilen,
-                j, jlen;
-
-            for (i = 0, ilen = sink_input.length; i < ilen; i++) {
-                si = sink_input[i];
-                volume = si.volume;
-                for (j = 0, jlen = volume.length; j < jlen; j++) {
-                    v = volume[j];
-                    $('#sink-input-' + si.index + '-' + v.name).slider({
-                        min: 0,
-                        max: 65536,
-                        value: v.value,
-                        change: slider_callback('sink-input', si.index, v.name),
-                    });
-                }
-            }
         }
     },
     raw = document.getElementById('raw');
 
 $(function() {
-    $("#tabs").tabs();
+    //$("#tabs").tabs();
+    $('.tabs a:last').tab('show');
 
     function onDataReceived(ret) {
         var p, e, f;
@@ -213,12 +173,10 @@ $(function() {
             if (f) {
                 output[p].innerHTML = f(e);
             }
-            f = render[p];
-            if (f) {
-                f(e);
-            }
         }
-        raw.innerHTML = '<![CDATA[' + JSON.stringify(state, null, ' ') + ']]>';
+        //raw.innerHTML = '<![CDATA[' + JSON.stringify(state, null, ' ') + ']]>';
+        raw.innerHTML = JSON.stringify(state, null, ' ');
+        prettyPrint();
         $.getJSON('/poll/' + ret.stamp, onDataReceived);
     };
 
