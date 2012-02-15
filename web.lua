@@ -155,8 +155,14 @@ do
 				list(self.data, res, function(t, res)
 					res:add('{\z
 						"index":%u,\z
-						"name":"%s"}',
-						t.index, t.name)
+						"name":"%s",\z
+						"binary":"%s",\z
+						"host":"%s",\z
+						"user":"%s"}',
+						t.index, t.name,
+						t.proplist['application.process.binary'],
+						t.proplist['application.process.host'],
+						t.proplist['application.process.user'])
 				end)
 			end,
 		},
@@ -266,14 +272,11 @@ hathaway.import()
 
 GET('/', function(req, res)
 	local accept = req.headers['Accept']
-	--[[
 	if accept and accept:match('application/xhtml%+xml') then
-		--res.headers['Content-Type'] = 'application/xhtml+xml; charset=UTF-8'
-		res.headers['Content-Type'] = 'application/xml; charset=UTF-8'
+		res.headers['Content-Type'] = 'application/xhtml+xml; charset=UTF-8'
 	else
-	--]]
 		res.headers['Content-Type'] = 'text/html; charset=UTF-8'
-	--end
+	end
 	res.file = 'index.html'
 end)
 

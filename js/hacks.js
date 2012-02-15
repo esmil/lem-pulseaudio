@@ -45,13 +45,12 @@ var state = {},
         if (mute) {
             r.push(' active');
         }
-        r.push('" id="', typ, '-', idx, '-mute" onclick="mute(\'', typ, '\',',
-                idx, ',', !mute,
-                ')"><i class="icon-volume-off"></i>&nbsp;Mute</button></div>');
+        r.push('" onclick="mute(\'', typ, '\',', idx, ',', !mute,
+                ')"><i class="icon-volume-off"></i> Mute</button></div>');
         if (vol) {
             r.push('<div class="btn-group"><button class="btn" onclick="volDown(\'',
-                typ, '\',', idx, ')"><i class="icon-volume-down"></i></button><button class="btn" onclick="volUp(\'',
-                typ, '\',', idx, ')"><i class="icon-volume-up"></i></button></div>');
+                    typ, '\',', idx, ')"><i class="icon-volume-down"></i></button><button class="btn" onclick="volUp(\'',
+                    typ, '\',', idx, ')"><i class="icon-volume-up"></i></button></div>');
         }
         r.push('</div>');
     },
@@ -102,7 +101,7 @@ var state = {},
                 r.push('<div class="alert alert-info"><h3>', c.description, '</h3><p>',
                         c.name, '<br/>',
                         c.card_name, '<br/>',
-                        c.product_name, '<br/></p></div>');
+                        c.product_name, '</p></div>');
             }
             return r.join('');
         },
@@ -126,8 +125,8 @@ var state = {},
             for (i = 0, ilen = source_output.length; i < ilen; i++) {
                 so = source_output[i];
                 r.push('<div class="alert alert-info"><a class=close onclick="kill(\'source-output\',',
-                        so.index, ')">×</a><h3>', so.description, '</h3></div>');
-                addVolumeControl(r, 'source-output', s.index, s.mute, s.volume);
+                        so.index, ')">×</a><h3>', so.description, '</h3>');
+                addVolumeControl(r, 'source-output', so.index, so.mute, so.volume);
                 r.push('</div>');
             }
             return r.join('');
@@ -153,7 +152,10 @@ var state = {},
             for (i = 0, ilen = client.length; i < ilen; i++) {
                 c = client[i];
                 r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'client\',',
-                        c.index, ')">×</a><h3>', c.name, '</h3></div>');
+                        c.index, ')">×</a><h3>', c.name, '</h3><dl><dt>Host</dt><dd>',
+                        c.host, '</dd><dt>User</dt><dd>',
+                        c.user, '</dd><dt>Binary</dt><dd>',
+                        c.binary, '</dd></dl></div>');
             }
             return r.join('');
         },
@@ -186,7 +188,7 @@ $(function() {
         raw.innerHTML = JSON.stringify(state, null, ' ');
         prettyPrint();
         $.getJSON('/poll/' + ret.stamp, onDataReceived);
-    };
+    }
 
     $.getJSON('/poll/0', onDataReceived);
 });

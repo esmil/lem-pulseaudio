@@ -38,7 +38,14 @@ print "\nClient info list:"
 for k, client in pairs(assert(c:client_info())) do
 	print(k)
 	for k, v in pairs(client) do
-		print('', k, v)
+		if k == 'proplist' then
+			print('', 'proplist:')
+			for k, v in pairs(v) do
+				print('', '', k, v)
+			end
+		else
+			print('', k, v)
+		end
 	end
 end
 
