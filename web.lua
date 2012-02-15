@@ -46,25 +46,6 @@ do
 
 	local now = gettimeofday()
 	state = {
-		server = {
-			stamp  = now,
-			data   = assert(c:server_info()),
-			update = function(self)
-				self.data = assert(c:server_info())
-				self.stamp = gettimeofday()
-			end,
-			tojson = function(self, res)
-				local t = self.data
-				res:add('{"server_name":"%s",\z
-					"server_version":"%s",\z
-					"host_name":"%s",\z
-					"user_name":"%s"}',
-					t.server_name,
-					t.server_version,
-					t.host_name,
-					t.user_name)
-			end,
-		},
 		sink = {
 			stamp  = now,
 			data   = assert(c:sink_info()),
@@ -111,6 +92,97 @@ do
 					end
 					volume_add(t.volume, t.channel_map, res)
 					res:add('"base_volume":%u}', t.base_volume)
+				end)
+			end,
+		},
+		server = {
+			stamp  = now,
+			data   = assert(c:server_info()),
+			update = function(self)
+				self.data = assert(c:server_info())
+				self.stamp = gettimeofday()
+			end,
+			tojson = function(self, res)
+				local t = self.data
+				res:add('{"server_name":"%s",\z
+					"server_version":"%s",\z
+					"host_name":"%s",\z
+					"user_name":"%s"}',
+					t.server_name,
+					t.server_version,
+					t.host_name,
+					t.user_name)
+			end,
+		},
+		module = {
+			stamp  = now,
+			data   = assert(c:module_info()),
+			update = function(self, typ, idx)
+				if typ == 'remove' then
+					self.data[idx] = nil
+				else
+					self.data[idx] = c:module_info(idx)
+				end
+				self.stamp = gettimeofday()
+			end,
+			tojson = function(self, res)
+				list(self.data, res, function(t, res)
+					res:add('{\z
+						"index":%u,\z
+						"name":"%s",\z
+						"description":"%s",\z
+						"author":"%s",\z
+						"version":"%s"}',
+						t.index, t.name,
+						t.proplist['module.description'],
+						t.proplist['module.author'],
+						t.proplist['module.version'])
+				end)
+			end,
+		},
+		client = {
+			stamp  = now,
+			data   = assert(c:client_info()),
+			update = function(self, typ, idx)
+				if typ == 'remove' then
+					self.data[idx] = nil
+				else
+					self.data[idx] = c:client_info(idx)
+				end
+				self.stamp = gettimeofday()
+			end,
+			tojson = function(self, res)
+				list(self.data, res, function(t, res)
+					res:add('{\z
+						"index":%u,\z
+						"name":"%s"}',
+						t.index, t.name)
+				end)
+			end,
+		},
+		card = {
+			stamp  = now,
+			data   = assert(c:card_info()),
+			update = function(self, typ, idx)
+				if typ == 'remove' then
+					self.data[idx] = nil
+				else
+					self.data[idx] = c:card_info(idx)
+				end
+				self.stamp = gettimeofday()
+			end,
+			tojson = function(self, res)
+				list(self.data, res, function(t, res)
+					res:add('{\z
+						"index":%u,\z
+						"name":"%s",\z
+						"description":"%s",\z
+						"card_name":"%s",\z
+						"product_name":"%s"}',
+						t.index, t.name,
+						t.proplist['device.description'],
+						t.proplist['alsa.card_name'],
+						t.proplist['device.product.name'])
 				end)
 			end,
 		},
@@ -170,52 +242,6 @@ do
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
 					res:add('{}')
-				end)
-			end,
-		},
-		module = {
-			stamp  = now,
-			data   = assert(c:module_info()),
-			update = function(self, typ, idx)
-				if typ == 'remove' then
-					self.data[idx] = nil
-				else
-					self.data[idx] = c:module_info(idx)
-				end
-				self.stamp = gettimeofday()
-			end,
-			tojson = function(self, res)
-				list(self.data, res, function(t, res)
-					res:add('{\z
-						"index":%u,\z
-						"name":"%s",\z
-						"description":"%s",\z
-						"author":"%s",\z
-						"version":"%s"}',
-						t.index, t.name,
-						t.proplist['module.description'],
-						t.proplist['module.author'],
-						t.proplist['module.version'])
-				end)
-			end,
-		},
-		client = {
-			stamp  = now,
-			data   = assert(c:client_info()),
-			update = function(self, typ, idx)
-				if typ == 'remove' then
-					self.data[idx] = nil
-				else
-					self.data[idx] = c:client_info(idx)
-				end
-				self.stamp = gettimeofday()
-			end,
-			tojson = function(self, res)
-				list(self.data, res, function(t, res)
-					res:add('{\z
-						"index":%u,\z
-						"name":"%s"}',
-						t.index, t.name)
 				end)
 			end,
 		},

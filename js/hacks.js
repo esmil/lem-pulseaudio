@@ -3,11 +3,12 @@ var state = {},
         server:        document.getElementById('server'),
         sink:          document.getElementById('sinks'),
         source:        document.getElementById('sources'),
+        card:          document.getElementById('cards'),
         sink_input:    document.getElementById('sink-inputs'),
         source_output: document.getElementById('source-outputs'),
-        sample:        document.getElementById('samples'),
         module:        document.getElementById('modules'),
-        client:        document.getElementById('clients')
+        client:        document.getElementById('clients'),
+        sample:        document.getElementById('samples')
     },
     mute = function(typ, idx, v) {
         $.post('/' + typ + '/' + idx, { mute: v });
@@ -20,9 +21,6 @@ var state = {},
     },
     kill = function(typ, idx) {
         $.post('/' + typ + '/' + idx, { kill: true });
-    },
-    hmm = function(e) {
-        console.log(e);
     },
     unload = function(idx) {
         $.post('/module/' + idx, { unload: true });
@@ -95,6 +93,19 @@ var state = {},
             }
             return r.join('');
         },
+        card: function(card) {
+            var r = [], c,
+                i, ilen;
+
+            for (i = 0, ilen = card.length; i < ilen; i++) {
+                c = card[i];
+                r.push('<div class="alert alert-info"><h3>', c.description, '</h3><p>',
+                        c.name, '<br/>',
+                        c.card_name, '<br/>',
+                        c.product_name, '<br/></p></div>');
+            }
+            return r.join('');
+        },
         sink_input: function(sink_input) {
             var r = [], si,
                 i, ilen;
@@ -118,16 +129,6 @@ var state = {},
                         so.index, ')">×</a><h3>', so.description, '</h3></div>');
                 addVolumeControl(r, 'source-output', s.index, s.mute, s.volume);
                 r.push('</div>');
-            }
-            return r.join('');
-        },
-        sample: function(sample) {
-            var r = [], s,
-                i, ilen;
-
-            for (i = 0, ilen = sample.length; i < ilen; i++) {
-                s = sample[i];
-                r.push('<h3>', s.description, '</h3>');
             }
             return r.join('');
         },
@@ -155,14 +156,21 @@ var state = {},
                         c.index, ')">×</a><h3>', c.name, '</h3></div>');
             }
             return r.join('');
+        },
+        sample: function(sample) {
+            var r = [], s,
+                i, ilen;
+
+            for (i = 0, ilen = sample.length; i < ilen; i++) {
+                s = sample[i];
+                r.push('<h3>', s.description, '</h3>');
+            }
+            return r.join('');
         }
     },
     raw = document.getElementById('raw');
 
 $(function() {
-    //$("#tabs").tabs();
-    $('.tabs a:last').tab('show');
-
     function onDataReceived(ret) {
         var p, e, f;
 
