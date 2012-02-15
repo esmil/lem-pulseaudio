@@ -5,16 +5,6 @@ local pa    = require 'lem.pulseaudio'
 
 local c = assert(pa.connect('LEM PulseAudio TestApp'))
 
-print "Server info:"
-for k, v in pairs(assert(c:server_info())) do
-	print(k, v)
-end
-
-print "\nStat:"
-for k, v in pairs(assert(c:stat())) do
-	print(k, v)
-end
-
 print "\nSink info list:"
 for k, sink in pairs(assert(c:sink_info())) do
 	print(k)
@@ -28,6 +18,42 @@ for k, source in pairs(assert(c:source_info())) do
 	print(k)
 	for k, v in pairs(source) do
 		print('', k, v)
+	end
+end
+
+print "Server info:"
+for k, v in pairs(assert(c:server_info())) do
+	print(k, v)
+end
+
+print "\nModule info list:"
+for k, module in pairs(assert(c:module_info())) do
+	print(k)
+	for k, v in pairs(module) do
+		print('', k, v)
+	end
+end
+
+print "\nClient info list:"
+for k, client in pairs(assert(c:client_info())) do
+	print(k)
+	for k, v in pairs(client) do
+		print('', k, v)
+	end
+end
+
+print "\nCard info list:"
+for k, card in pairs(assert(c:card_info())) do
+	print(k)
+	for k, v in pairs(card) do
+		if k == 'proplist' then
+			print('', 'proplist:')
+			for k, v in pairs(v) do
+				print('', '', k, v)
+			end
+		else
+			print('', k, v)
+		end
 	end
 end
 
@@ -47,26 +73,15 @@ for k, output in pairs(assert(c:source_output_info())) do
 	end
 end
 
+print "\nStat:"
+for k, v in pairs(assert(c:stat())) do
+	print(k, v)
+end
+
 print "\nSample info list:"
 for k, sample in pairs(assert(c:sample_info())) do
 	print(k)
 	for k, v in pairs(sample) do
-		print('', k, v)
-	end
-end
-
-print "\nModule info list:"
-for k, module in pairs(assert(c:module_info())) do
-	print(k)
-	for k, v in pairs(module) do
-		print('', k, v)
-	end
-end
-
-print "\nClient info list:"
-for k, client in pairs(assert(c:client_info())) do
-	print(k)
-	for k, v in pairs(client) do
 		print('', k, v)
 	end
 end

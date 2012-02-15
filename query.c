@@ -99,110 +99,6 @@ ctx_formats_push(lua_State *T, int formats, pa_format_info **f)
 }
 
 /*
- * Server Info
- */
-static void
-ctx_server_info_cb(pa_context *c, const pa_server_info *info, void *userdata)
-{
-	lua_State *T = userdata;
-
-	(void)c;
-
-	if (info) {
-		lua_createtable(T, 0, 9);
-		lua_pushstring(T, info->user_name);
-		lua_setfield(T, -2, "user_name");
-		lua_pushstring(T, info->host_name);
-		lua_setfield(T, -2, "host_name");
-		lua_pushstring(T, info->server_version);
-		lua_setfield(T, -2, "server_version");
-		lua_pushstring(T, info->server_name);
-		lua_setfield(T, -2, "server_name");
-		ctx_sample_spec_push(T, &info->sample_spec);
-		lua_setfield(T, -2, "sample_spec");
-		lua_pushstring(T, info->default_sink_name);
-		lua_setfield(T, -2, "default_sink_name");
-		lua_pushstring(T, info->default_source_name);
-		lua_setfield(T, -2, "default_source_name");
-		lua_pushnumber(T, info->cookie);
-		lua_setfield(T, -2, "cookie");
-		ctx_channel_map_push(T, &info->channel_map);
-		lua_setfield(T, -2, "channel_map");
-	} else
-		lua_pushnil(T);
-
-	lem_queue(T, 1);
-}
-
-static int
-ctx_server_info(lua_State *T)
-{
-	struct ctx *ctx;
-	pa_operation *o;
-
-	luaL_checktype(T, 1, LUA_TUSERDATA);
-	ctx = lua_touserdata(T, 1);
-	if (ctx->handle == NULL) {
-		lua_pushnil(T);
-		lua_pushliteral(T, "closed");
-		return 2;
-	}
-
-	lua_settop(T, 1);
-	o = pa_context_get_server_info(ctx->handle, ctx_server_info_cb, T);
-	pa_operation_unref(o);
-	return lua_yield(T, lua_gettop(T));
-}
-
-/*
- * Stat
- */
-static void
-ctx_stat_cb(pa_context *c, const pa_stat_info *info, void *userdata)
-{
-	lua_State *T = userdata;
-
-	(void)c;
-
-	if (info) {
-		lua_createtable(T, 0, 5);
-		lua_pushnumber(T, info->memblock_total);
-		lua_setfield(T, -2, "memblock_total");
-		lua_pushnumber(T, info->memblock_total_size);
-		lua_setfield(T, -2, "memblock_total_size");
-		lua_pushnumber(T, info->memblock_allocated);
-		lua_setfield(T, -2, "memblock_allocated");
-		lua_pushnumber(T, info->memblock_allocated_size);
-		lua_setfield(T, -2, "memblock_allocated_size");
-		lua_pushnumber(T, info->scache_size);
-		lua_setfield(T, -2, "scache_size");
-	} else
-		lua_pushnil(T);
-
-	lem_queue(T, 1);
-}
-
-static int
-ctx_stat(lua_State *T)
-{
-	struct ctx *ctx;
-	pa_operation *o;
-
-	luaL_checktype(T, 1, LUA_TUSERDATA);
-	ctx = lua_touserdata(T, 1);
-	if (ctx->handle == NULL) {
-		lua_pushnil(T);
-		lua_pushliteral(T, "closed");
-		return 2;
-	}
-
-	lua_settop(T, 1);
-	o = pa_context_stat(ctx->handle, ctx_stat_cb, T);
-	pa_operation_unref(o);
-	return lua_yield(T, lua_gettop(T));
-}
-
-/*
  * Sink Info
  */
 static void
@@ -506,6 +402,212 @@ ctx_source_info(lua_State *T)
 }
 
 /*
+ * Server Info
+ */
+static void
+ctx_server_info_cb(pa_context *c, const pa_server_info *info, void *userdata)
+{
+	lua_State *T = userdata;
+
+	(void)c;
+
+	if (info) {
+		lua_createtable(T, 0, 9);
+		lua_pushstring(T, info->user_name);
+		lua_setfield(T, -2, "user_name");
+		lua_pushstring(T, info->host_name);
+		lua_setfield(T, -2, "host_name");
+		lua_pushstring(T, info->server_version);
+		lua_setfield(T, -2, "server_version");
+		lua_pushstring(T, info->server_name);
+		lua_setfield(T, -2, "server_name");
+		ctx_sample_spec_push(T, &info->sample_spec);
+		lua_setfield(T, -2, "sample_spec");
+		lua_pushstring(T, info->default_sink_name);
+		lua_setfield(T, -2, "default_sink_name");
+		lua_pushstring(T, info->default_source_name);
+		lua_setfield(T, -2, "default_source_name");
+		lua_pushnumber(T, info->cookie);
+		lua_setfield(T, -2, "cookie");
+		ctx_channel_map_push(T, &info->channel_map);
+		lua_setfield(T, -2, "channel_map");
+	} else
+		lua_pushnil(T);
+
+	lem_queue(T, 1);
+}
+
+static int
+ctx_server_info(lua_State *T)
+{
+	struct ctx *ctx;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	o = pa_context_get_server_info(ctx->handle, ctx_server_info_cb, T);
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
+
+/*
+ * Module Info
+ */
+static void
+ctx_module_info_push(lua_State *T, const pa_module_info *info)
+{
+	lua_createtable(T, 0, 5);
+	lua_pushnumber(T, info->index);
+	lua_setfield(T, -2, "index");
+	lua_pushstring(T, info->name);
+	lua_setfield(T, -2, "name");
+	lua_pushstring(T, info->argument);
+	lua_setfield(T, -2, "argument");
+	if (info->n_used != PA_INVALID_INDEX) {
+		lua_pushnumber(T, info->n_used);
+		lua_setfield(T, -2, "n_used");
+	}
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
+}
+
+static void
+ctx_module_info_cb(pa_context *c,
+		const pa_module_info *info, int eol, void *userdata)
+{
+	lua_State *T = userdata;
+
+	(void)c;
+	lem_debug("eol = %d, info = %p", eol, info);
+
+	if (info) {
+		ctx_module_info_push(T, info);
+		if (lua_gettop(T) > 2)
+			lua_rawseti(T, 2, info->index);
+	}
+
+	if (eol) {
+		if (lua_gettop(T) < 2)
+			lua_pushnil(T);
+		lem_queue(T, 1);
+	}
+}
+
+static int
+ctx_module_info(lua_State *T)
+{
+	struct ctx *ctx;
+	uint32_t idx;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	idx = luaL_optnumber(T, 2, PA_INVALID_INDEX);
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	if (idx == PA_INVALID_INDEX) {
+		lua_createtable(T, 0, 0);
+		o = pa_context_get_module_info_list(ctx->handle,
+				ctx_module_info_cb, T);
+	} else
+		o = pa_context_get_module_info(ctx->handle,
+				idx, ctx_module_info_cb, T);
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
+
+/*
+ * Client Info
+ */
+static void
+ctx_client_info_push(lua_State *T, const pa_client_info *info)
+{
+	lua_createtable(T, 0, 5);
+	lua_pushnumber(T, info->index);
+	lua_setfield(T, -2, "index");
+	lua_pushstring(T, info->name);
+	lua_setfield(T, -2, "name");
+	if (info->owner_module != PA_INVALID_INDEX) {
+		lua_pushnumber(T, info->owner_module);
+		lua_setfield(T, -2, "owner_module");
+	}
+	lua_pushstring(T, info->driver);
+	lua_setfield(T, -2, "driver");
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
+}
+
+static void
+ctx_client_info_cb(pa_context *c,
+		const pa_client_info *info, int eol, void *userdata)
+{
+	lua_State *T = userdata;
+
+	(void)c;
+	lem_debug("eol = %d, info = %p", eol, info);
+
+	if (info) {
+		ctx_client_info_push(T, info);
+		if (lua_gettop(T) > 2)
+			lua_rawseti(T, 2, info->index);
+	}
+
+	if (eol) {
+		if (lua_gettop(T) < 2)
+			lua_pushnil(T);
+		lem_queue(T, 1);
+	}
+}
+
+static int
+ctx_client_info(lua_State *T)
+{
+	struct ctx *ctx;
+	uint32_t idx;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	idx = luaL_optnumber(T, 2, PA_INVALID_INDEX);
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	if (idx == PA_INVALID_INDEX) {
+		lua_createtable(T, 0, 0);
+		o = pa_context_get_client_info_list(ctx->handle,
+				ctx_client_info_cb, T);
+	} else
+		o = pa_context_get_client_info(ctx->handle,
+				idx, ctx_client_info_cb, T);
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
+
+/*
+ * Card Info
+ */
+
+/*
  * Sink Input Info
  */
 static void
@@ -712,6 +814,54 @@ ctx_source_output_info(lua_State *T)
 }
 
 /*
+ * Stat
+ */
+static void
+ctx_stat_cb(pa_context *c, const pa_stat_info *info, void *userdata)
+{
+	lua_State *T = userdata;
+
+	(void)c;
+
+	if (info) {
+		lua_createtable(T, 0, 5);
+		lua_pushnumber(T, info->memblock_total);
+		lua_setfield(T, -2, "memblock_total");
+		lua_pushnumber(T, info->memblock_total_size);
+		lua_setfield(T, -2, "memblock_total_size");
+		lua_pushnumber(T, info->memblock_allocated);
+		lua_setfield(T, -2, "memblock_allocated");
+		lua_pushnumber(T, info->memblock_allocated_size);
+		lua_setfield(T, -2, "memblock_allocated_size");
+		lua_pushnumber(T, info->scache_size);
+		lua_setfield(T, -2, "scache_size");
+	} else
+		lua_pushnil(T);
+
+	lem_queue(T, 1);
+}
+
+static int
+ctx_stat(lua_State *T)
+{
+	struct ctx *ctx;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	o = pa_context_stat(ctx->handle, ctx_stat_cb, T);
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
+
+/*
  * Sample Info
  */
 static void
@@ -810,152 +960,6 @@ ctx_sample_info(lua_State *T)
 		o = pa_context_get_sample_info_list(ctx->handle,
 				ctx_sample_info_cb, T);
 	}
-	pa_operation_unref(o);
-	return lua_yield(T, lua_gettop(T));
-}
-
-/*
- * Module Info
- */
-static void
-ctx_module_info_push(lua_State *T, const pa_module_info *info)
-{
-	lua_createtable(T, 0, 5);
-	lua_pushnumber(T, info->index);
-	lua_setfield(T, -2, "index");
-	lua_pushstring(T, info->name);
-	lua_setfield(T, -2, "name");
-	lua_pushstring(T, info->argument);
-	lua_setfield(T, -2, "argument");
-	if (info->n_used != PA_INVALID_INDEX) {
-		lua_pushnumber(T, info->n_used);
-		lua_setfield(T, -2, "n_used");
-	}
-	if (info->proplist) {
-		ctx_proplist_push(T, info->proplist);
-		lua_setfield(T, -2, "proplist");
-	}
-}
-
-static void
-ctx_module_info_cb(pa_context *c,
-		const pa_module_info *info, int eol, void *userdata)
-{
-	lua_State *T = userdata;
-
-	(void)c;
-	lem_debug("eol = %d, info = %p", eol, info);
-
-	if (info) {
-		ctx_module_info_push(T, info);
-		if (lua_gettop(T) > 2)
-			lua_rawseti(T, 2, info->index);
-	}
-
-	if (eol) {
-		if (lua_gettop(T) < 2)
-			lua_pushnil(T);
-		lem_queue(T, 1);
-	}
-}
-
-static int
-ctx_module_info(lua_State *T)
-{
-	struct ctx *ctx;
-	uint32_t idx;
-	pa_operation *o;
-
-	luaL_checktype(T, 1, LUA_TUSERDATA);
-	idx = luaL_optnumber(T, 2, PA_INVALID_INDEX);
-	ctx = lua_touserdata(T, 1);
-	if (ctx->handle == NULL) {
-		lua_pushnil(T);
-		lua_pushliteral(T, "closed");
-		return 2;
-	}
-
-	lua_settop(T, 1);
-	if (idx == PA_INVALID_INDEX) {
-		lua_createtable(T, 0, 0);
-		o = pa_context_get_module_info_list(ctx->handle,
-				ctx_module_info_cb, T);
-	} else
-		o = pa_context_get_module_info(ctx->handle,
-				idx, ctx_module_info_cb, T);
-	pa_operation_unref(o);
-	return lua_yield(T, lua_gettop(T));
-}
-
-/*
- * Client Info
- */
-static void
-ctx_client_info_push(lua_State *T, const pa_client_info *info)
-{
-	lua_createtable(T, 0, 5);
-	lua_pushnumber(T, info->index);
-	lua_setfield(T, -2, "index");
-	lua_pushstring(T, info->name);
-	lua_setfield(T, -2, "name");
-	if (info->owner_module != PA_INVALID_INDEX) {
-		lua_pushnumber(T, info->owner_module);
-		lua_setfield(T, -2, "owner_module");
-	}
-	lua_pushstring(T, info->driver);
-	lua_setfield(T, -2, "driver");
-	if (info->proplist) {
-		ctx_proplist_push(T, info->proplist);
-		lua_setfield(T, -2, "proplist");
-	}
-}
-
-static void
-ctx_client_info_cb(pa_context *c,
-		const pa_client_info *info, int eol, void *userdata)
-{
-	lua_State *T = userdata;
-
-	(void)c;
-	lem_debug("eol = %d, info = %p", eol, info);
-
-	if (info) {
-		ctx_client_info_push(T, info);
-		if (lua_gettop(T) > 2)
-			lua_rawseti(T, 2, info->index);
-	}
-
-	if (eol) {
-		if (lua_gettop(T) < 2)
-			lua_pushnil(T);
-		lem_queue(T, 1);
-	}
-}
-
-static int
-ctx_client_info(lua_State *T)
-{
-	struct ctx *ctx;
-	uint32_t idx;
-	pa_operation *o;
-
-	luaL_checktype(T, 1, LUA_TUSERDATA);
-	idx = luaL_optnumber(T, 2, PA_INVALID_INDEX);
-	ctx = lua_touserdata(T, 1);
-	if (ctx->handle == NULL) {
-		lua_pushnil(T);
-		lua_pushliteral(T, "closed");
-		return 2;
-	}
-
-	lua_settop(T, 1);
-	if (idx == PA_INVALID_INDEX) {
-		lua_createtable(T, 0, 0);
-		o = pa_context_get_client_info_list(ctx->handle,
-				ctx_client_info_cb, T);
-	} else
-		o = pa_context_get_client_info(ctx->handle,
-				idx, ctx_client_info_cb, T);
 	pa_operation_unref(o);
 	return lua_yield(T, lua_gettop(T));
 }

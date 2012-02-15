@@ -305,33 +305,35 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.disconnect = <ctx_disconnect> */
 	lua_pushcfunction(L, ctx_disconnect);
 	lua_setfield(L, -2, "disconnect");
-	/* mt.server_info = <ctx_server_info> */
-	lua_pushcfunction(L, ctx_server_info);
-	lua_setfield(L, -2, "server_info");
-	/* mt.stat = <ctx_stat> */
-	lua_pushcfunction(L, ctx_stat);
-	lua_setfield(L, -2, "stat");
+
 	/* mt.sink_info = <ctx_sink_info> */
 	lua_pushcfunction(L, ctx_sink_info);
 	lua_setfield(L, -2, "sink_info");
 	/* mt.source_info = <ctx_source_info> */
 	lua_pushcfunction(L, ctx_source_info);
 	lua_setfield(L, -2, "source_info");
-	/* mt.sink_input_info = <ctx_sink_input_info> */
-	lua_pushcfunction(L, ctx_sink_input_info);
-	lua_setfield(L, -2, "sink_input_info");
-	/* mt.source_output_info = <ctx_source_output_info> */
-	lua_pushcfunction(L, ctx_source_output_info);
-	lua_setfield(L, -2, "source_output_info");
-	/* mt.sample_info = <ctx_sample_info> */
-	lua_pushcfunction(L, ctx_sample_info);
-	lua_setfield(L, -2, "sample_info");
+	/* mt.server_info = <ctx_server_info> */
+	lua_pushcfunction(L, ctx_server_info);
+	lua_setfield(L, -2, "server_info");
 	/* mt.module_info = <ctx_module_info> */
 	lua_pushcfunction(L, ctx_module_info);
 	lua_setfield(L, -2, "module_info");
 	/* mt.client_info = <ctx_client_info> */
 	lua_pushcfunction(L, ctx_client_info);
 	lua_setfield(L, -2, "client_info");
+	/* mt.sink_input_info = <ctx_sink_input_info> */
+	lua_pushcfunction(L, ctx_sink_input_info);
+	lua_setfield(L, -2, "sink_input_info");
+	/* mt.source_output_info = <ctx_source_output_info> */
+	lua_pushcfunction(L, ctx_source_output_info);
+	lua_setfield(L, -2, "source_output_info");
+	/* mt.stat = <ctx_stat> */
+	lua_pushcfunction(L, ctx_stat);
+	lua_setfield(L, -2, "stat");
+	/* mt.sample_info = <ctx_sample_info> */
+	lua_pushcfunction(L, ctx_sample_info);
+	lua_setfield(L, -2, "sample_info");
+
 	/* mt.set_sink_mute = <ctx_set_sink_mute> */
 	lua_pushcfunction(L, ctx_set_sink_mute);
 	lua_setfield(L, -2, "set_sink_mute");
@@ -356,6 +358,15 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.set_source_port = <ctx_set_source_port> */
 	lua_pushcfunction(L, ctx_set_source_port);
 	lua_setfield(L, -2, "set_source_port");
+	/* mt.load_module = <ctx_load_module> */
+	lua_pushcfunction(L, ctx_load_module);
+	lua_setfield(L, -2, "load_module");
+	/* mt.unload_module = <ctx_unload_module> */
+	lua_pushcfunction(L, ctx_unload_module);
+	lua_setfield(L, -2, "unload_module");
+	/* mt.kill_client = <ctx_kill_client> */
+	lua_pushcfunction(L, ctx_kill_client);
+	lua_setfield(L, -2, "kill_client");
 	/* mt.set_sink_input_mute = <ctx_set_sink_input_mute> */
 	lua_pushcfunction(L, ctx_set_sink_input_mute);
 	lua_setfield(L, -2, "set_sink_input_mute");
@@ -380,15 +391,7 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.kill_source_output = <ctx_kill_source_output> */
 	lua_pushcfunction(L, ctx_kill_source_output);
 	lua_setfield(L, -2, "kill_source_output");
-	/* mt.load_module = <ctx_load_module> */
-	lua_pushcfunction(L, ctx_load_module);
-	lua_setfield(L, -2, "load_module");
-	/* mt.unload_module = <ctx_unload_module> */
-	lua_pushcfunction(L, ctx_unload_module);
-	lua_setfield(L, -2, "unload_module");
-	/* mt.kill_client = <ctx_kill_client> */
-	lua_pushcfunction(L, ctx_kill_client);
-	lua_setfield(L, -2, "kill_client");
+
 	/* mt.subscribe = <ctx_subscribe> */
 	lua_pushcfunction(L, ctx_subscribe);
 	lua_setfield(L, -2, "subscribe");
@@ -396,13 +399,13 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	lua_createtable(L, 9, 0);
 	set_facility_constant(L, SINK,          "sink");
 	set_facility_constant(L, SOURCE,        "source");
-	set_facility_constant(L, SINK_INPUT,    "sink_input");
-	set_facility_constant(L, SOURCE_OUTPUT, "source_output");
+	set_facility_constant(L, SERVER,        "server");
 	set_facility_constant(L, MODULE,        "module");
 	set_facility_constant(L, CLIENT,        "client");
-	set_facility_constant(L, SAMPLE_CACHE,  "sample_cache");
-	set_facility_constant(L, SERVER,        "server");
 	set_facility_constant(L, CARD,          "card");
+	set_facility_constant(L, SINK_INPUT,    "sink_input");
+	set_facility_constant(L, SOURCE_OUTPUT, "source_output");
+	set_facility_constant(L, SAMPLE_CACHE,  "sample_cache");
 	/* create type lookup table */
 	lua_createtable(L, 3, 0);
 	set_type_constant(L, NEW,    "new");
