@@ -606,6 +606,99 @@ ctx_client_info(lua_State *T)
 /*
  * Card Info
  */
+static void
+ctx_card_info_push(lua_State *T, const pa_card_info *info)
+{
+	lua_createtable(T, 0, 5);
+	lua_pushnumber(T, info->index);
+	lua_setfield(T, -2, "index");
+	lua_pushstring(T, info->name);
+	lua_setfield(T, -2, "name");
+	if (info->owner_module != PA_INVALID_INDEX) {
+		lua_pushnumber(T, info->owner_module);
+		lua_setfield(T, -2, "owner_module");
+	}
+	lua_pushstring(T, info->driver);
+	lua_setfield(T, -2, "driver");
+	/* ... */
+	if (info->proplist) {
+		ctx_proplist_push(T, info->proplist);
+		lua_setfield(T, -2, "proplist");
+	}
+}
+
+static void
+ctx_card_info_cb(pa_context *c, const pa_card_info *info, int eol, void *userdata)
+{
+	lua_State *T = userdata;
+
+	(void)c;
+	lem_debug("eol = %d, info = %p", eol, info);
+
+	if (info) {
+		ctx_card_info_push(T, info);
+		if (lua_gettop(T))
+			lua_rawseti(T, 2, info->index);
+	}
+
+	if (eol) {
+		if (lua_gettop(T) < 2)
+			lua_pushnil(T);
+		lem_queue(T, 1);
+	}
+}
+
+static int
+ctx_card_info(lua_State *T)
+{
+	struct ctx *ctx;
+	int type = 0;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	if (lua_gettop(T) > 1) {
+		type = lua_type(T, 2);
+		if (type != LUA_TNUMBER && type != LUA_TSTRING)
+			return luaL_argerror(T, 2, "expected number or string");
+	}
+	ctx = lua_touserdata(T, 1);
+	if (ctx->handle == NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "closed");
+		return 2;
+	}
+
+	switch (type) {
+	case LUA_TNUMBER:
+		{
+			uint32_t idx = lua_tonumber(T, 2);
+
+			lua_settop(T, 1);
+			o = pa_context_get_card_info_by_index(ctx->handle,
+					idx, ctx_card_info_cb, T);
+		}
+		break;
+
+	case LUA_TSTRING:
+		{
+			const char *name = lua_tostring(T, 2);
+
+			lua_settop(T, 1);
+			o = pa_context_get_card_info_by_name(ctx->handle,
+					name, ctx_card_info_cb, T);
+		}
+		break;
+
+	default:
+		lua_settop(T, 1);
+		lua_createtable(T, 1, 0);
+		o = pa_context_get_card_info_list(ctx->handle,
+				ctx_card_info_cb, T);
+		break;
+	}
+	pa_operation_unref(o);
+	return lua_yield(T, lua_gettop(T));
+}
 
 /*
  * Sink Input Info

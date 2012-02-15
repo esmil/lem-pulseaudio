@@ -321,6 +321,9 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.client_info = <ctx_client_info> */
 	lua_pushcfunction(L, ctx_client_info);
 	lua_setfield(L, -2, "client_info");
+	/* mt.card_info = <ctx_card_info> */
+	lua_pushcfunction(L, ctx_card_info);
+	lua_setfield(L, -2, "card_info");
 	/* mt.sink_input_info = <ctx_sink_input_info> */
 	lua_pushcfunction(L, ctx_sink_input_info);
 	lua_setfield(L, -2, "sink_input_info");
