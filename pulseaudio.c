@@ -356,9 +356,27 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.set_source_port = <ctx_set_source_port> */
 	lua_pushcfunction(L, ctx_set_source_port);
 	lua_setfield(L, -2, "set_source_port");
+	/* mt.set_sink_input_mute = <ctx_set_sink_input_mute> */
+	lua_pushcfunction(L, ctx_set_sink_input_mute);
+	lua_setfield(L, -2, "set_sink_input_mute");
+	/* mt.set_sink_input_unmute = <ctx_set_sink_input_unmute> */
+	lua_pushcfunction(L, ctx_set_sink_input_unmute);
+	lua_setfield(L, -2, "set_sink_input_unmute");
+	/* mt.set_sink_input_volume = <ctx_set_sink_input_volume> */
+	lua_pushcfunction(L, ctx_set_sink_input_volume);
+	lua_setfield(L, -2, "set_sink_input_volume");
 	/* mt.kill_sink_input = <ctx_kill_sink_input> */
 	lua_pushcfunction(L, ctx_kill_sink_input);
 	lua_setfield(L, -2, "kill_sink_input");
+	/* mt.set_source_output_mute = <ctx_set_source_output_mute> */
+	lua_pushcfunction(L, ctx_set_source_output_mute);
+	lua_setfield(L, -2, "set_source_output_mute");
+	/* mt.set_source_output_unmute = <ctx_set_source_output_unmute> */
+	lua_pushcfunction(L, ctx_set_source_output_unmute);
+	lua_setfield(L, -2, "set_source_output_unmute");
+	/* mt.set_source_output_volume = <ctx_set_source_output_volume> */
+	lua_pushcfunction(L, ctx_set_source_output_volume);
+	lua_setfield(L, -2, "set_source_output_volume");
 	/* mt.kill_source_output = <ctx_kill_source_output> */
 	lua_pushcfunction(L, ctx_kill_source_output);
 	lua_setfield(L, -2, "kill_source_output");
