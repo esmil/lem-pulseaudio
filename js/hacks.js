@@ -124,8 +124,8 @@ var state = {},
 
             for (i = 0, ilen = source_output.length; i < ilen; i++) {
                 so = source_output[i];
-                r.push('<div class="alert alert-info"><a class=close onclick="kill(\'source-output\',',
-                        so.index, ')">×</a><h3>', so.description, '</h3>');
+                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'source-output\',',
+                        so.index, ')">×</a><h3>', so.name, '</h3>');
                 addVolumeControl(r, 'source-output', so.index, so.mute, so.volume);
                 r.push('</div>');
             }

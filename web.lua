@@ -230,7 +230,15 @@ do
 			end,
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
-					res:add('{}')
+					res:add('{\z
+						"index":%u,\z
+						"name":"%s",\z
+						"mute":%s,\z
+						"has_volume":%s,',
+						t.index, t.name,
+						t.mute, t.has_volume)
+					volume_add(t.volume, t.channel_map, res)
+					res:add('"corked":%s}', t.corked)
 				end)
 			end,
 		},
