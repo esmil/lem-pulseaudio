@@ -1,13 +1,13 @@
 var state = {},
     output = {
         server:        document.getElementById('server'),
+        sink_input:    document.getElementById('sink-inputs'),
+        source_output: document.getElementById('source-outputs'),
         sink:          document.getElementById('sinks'),
         source:        document.getElementById('sources'),
         card:          document.getElementById('cards'),
-        sink_input:    document.getElementById('sink-inputs'),
-        source_output: document.getElementById('source-outputs'),
-        module:        document.getElementById('modules'),
         client:        document.getElementById('clients'),
+        module:        document.getElementById('modules'),
         sample_cache:  document.getElementById('samples')
     },
     mute = function(typ, idx, v) {
@@ -62,6 +62,32 @@ var state = {},
                 + '<dt>User Name</dt><dd>' + s.user_name + '</dd>'
                 + '</dl>';
         },
+        sink_input: function(sink_input) {
+            var r = [], si,
+                i, ilen;
+
+            for (i = 0, ilen = sink_input.length; i < ilen; i++) {
+                si = sink_input[i];
+                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'sink-input\',',
+                        si.index, ')">×</a><h3>', si.name, '</h3>');
+                addVolumeControl(r, 'sink-input', si.index, si.mute, si.volume);
+                r.push('</div>');
+            }
+            return r.join('');
+        },
+        source_output: function(source_output) {
+            var r = [], so,
+                i, ilen;
+
+            for (i = 0, ilen = source_output.length; i < ilen; i++) {
+                so = source_output[i];
+                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'source-output\',',
+                        so.index, ')">×</a><h3>', so.name, '</h3>');
+                addVolumeControl(r, 'source-output', so.index, so.mute, so.volume);
+                r.push('</div>');
+            }
+            return r.join('');
+        },
         sink: function(sink) {
             var r = [], s,
                 i, ilen;
@@ -105,29 +131,17 @@ var state = {},
             }
             return r.join('');
         },
-        sink_input: function(sink_input) {
-            var r = [], si,
+        client: function(client) {
+            var r = [], c,
                 i, ilen;
 
-            for (i = 0, ilen = sink_input.length; i < ilen; i++) {
-                si = sink_input[i];
-                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'sink-input\',',
-                        si.index, ')">×</a><h3>', si.name, '</h3>');
-                addVolumeControl(r, 'sink-input', si.index, si.mute, si.volume);
-                r.push('</div>');
-            }
-            return r.join('');
-        },
-        source_output: function(source_output) {
-            var r = [], so,
-                i, ilen;
-
-            for (i = 0, ilen = source_output.length; i < ilen; i++) {
-                so = source_output[i];
-                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'source-output\',',
-                        so.index, ')">×</a><h3>', so.name, '</h3>');
-                addVolumeControl(r, 'source-output', so.index, so.mute, so.volume);
-                r.push('</div>');
+            for (i = 0, ilen = client.length; i < ilen; i++) {
+                c = client[i];
+                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'client\',',
+                        c.index, ')">×</a><h3>', c.name, '</h3><dl><dt>Host</dt><dd>',
+                        c.host, '</dd><dt>User</dt><dd>',
+                        c.user, '</dd><dt>Binary</dt><dd>',
+                        c.binary, '</dd></dl></div>');
             }
             return r.join('');
         },
@@ -142,20 +156,6 @@ var state = {},
                         m.description, '<br/>',
                         m.author, '<br/>',
                         m.version, '</p></div>');
-            }
-            return r.join('');
-        },
-        client: function(client) {
-            var r = [], c,
-                i, ilen;
-
-            for (i = 0, ilen = client.length; i < ilen; i++) {
-                c = client[i];
-                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'client\',',
-                        c.index, ')">×</a><h3>', c.name, '</h3><dl><dt>Host</dt><dd>',
-                        c.host, '</dd><dt>User</dt><dd>',
-                        c.user, '</dd><dt>Binary</dt><dd>',
-                        c.binary, '</dd></dl></div>');
             }
             return r.join('');
         },
