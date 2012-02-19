@@ -8,7 +8,7 @@ var state = {},
         source_output: document.getElementById('source-outputs'),
         module:        document.getElementById('modules'),
         client:        document.getElementById('clients'),
-        sample:        document.getElementById('samples')
+        sample_cache:  document.getElementById('samples')
     },
     mute = function(typ, idx, v) {
         $.post('/' + typ + '/' + idx, { mute: v });
@@ -159,13 +159,14 @@ var state = {},
             }
             return r.join('');
         },
-        sample: function(sample) {
+        sample_cache: function(sample) {
             var r = [], s,
                 i, ilen;
 
             for (i = 0, ilen = sample.length; i < ilen; i++) {
                 s = sample[i];
-                r.push('<h3>', s.description, '</h3>');
+                r.push('<div class="alert alert-info"><h3>', s.description,
+                        '</h3></div>');
             }
             return r.join('');
         }

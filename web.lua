@@ -234,7 +234,7 @@ do
 				end)
 			end,
 		},
-		sample = {
+		sample_cache = {
 			stamp  = now,
 			data   = assert(c:sample_info()),
 			update = function(self, typ, idx)
