@@ -78,7 +78,7 @@ loop_quit(pa_mainloop_api *a, int retval)
 {
 	(void)a;
 	(void)retval;
-	lem_debug("Hmm.. pulseaudio wants us to quit with retval %d", retval);
+	//lem_debug("Hmm.. pulseaudio wants us to quit with retval %d", retval);
 }
 
 static struct pa_mainloop_api loop_api = {
@@ -116,7 +116,7 @@ io_handler(EV_P_ ev_io *w, int revents)
 	if (revents & EV_ERROR)
 		events |= PA_IO_EVENT_ERROR;
 
-	lem_debug("flags = %d", events);
+	//lem_debug("flags = %d", events);
 	ev->cb(&loop_api, ev, ev->w.fd, events, ev->w.data);
 }
 
@@ -128,7 +128,7 @@ io_new(pa_mainloop_api *a, int fd, pa_io_event_flags_t events,
 	int revents = 0;
 
 	(void)a;
-	lem_debug("flags = %d", events);
+	//lem_debug("flags = %d", events);
 
 	if (events & PA_IO_EVENT_INPUT)
 		revents |= EV_READ;
@@ -152,7 +152,7 @@ io_enable(pa_io_event *ev, pa_io_event_flags_t events)
 {
 	int revents = 0;
 
-	lem_debug("flags = %d", events);
+	//lem_debug("flags = %d", events);
 
 	if (events & PA_IO_EVENT_INPUT)
 		revents |= EV_READ;
@@ -172,7 +172,7 @@ io_enable(pa_io_event *ev, pa_io_event_flags_t events)
 static void
 io_free(pa_io_event *ev)
 {
-	lem_debug("freeing event %p", ev);
+	//lem_debug("freeing event %p", ev);
 	ev_io_stop(EV_G_ &ev->w);
 	if (ev->destroy)
 		ev->destroy(&loop_api, ev, ev->w.data);
@@ -182,7 +182,7 @@ io_free(pa_io_event *ev)
 static void
 io_set_destroy(struct pa_io_event *ev, pa_io_event_destroy_cb_t cb)
 {
-	lem_debug("setting destroy callback");
+	//lem_debug("setting destroy callback");
 	ev->destroy = cb;
 }
 
@@ -201,7 +201,7 @@ time_handler(EV_P_ struct ev_timer *w, int revents)
 	struct pa_time_event *ev = (struct pa_time_event *)w;
 
 	(void)revents;
-	lem_debug("callback..");
+	//lem_debug("callback..");
 	ev->cb(&loop_api, ev, &ev->tv, ev->w.data);
 }
 
@@ -213,7 +213,7 @@ time_new(pa_mainloop_api *a, const struct timeval *tv,
 	ev_tstamp timeout = timeval_to_stamp(tv);
 
 	(void)a;
-	lem_debug("after = %f seconds", timeout - ev_now(EV_G));
+	//lem_debug("after = %f seconds", timeout - ev_now(EV_G));
 
 	ev->w.data = userdata;
 	ev->tv.tv_sec = tv->tv_sec;
@@ -231,7 +231,7 @@ time_restart(pa_time_event *ev, const struct timeval *tv)
 {
 	ev_tstamp timeout = timeval_to_stamp(tv);
 
-	lem_debug("resetting to %f seconds", timeout - ev_now(EV_G));
+	//lem_debug("resetting to %f seconds", timeout - ev_now(EV_G));
 
 	ev->tv.tv_sec = tv->tv_sec;
 	ev->tv.tv_usec = tv->tv_usec;
@@ -244,7 +244,7 @@ time_restart(pa_time_event *ev, const struct timeval *tv)
 static void
 time_free(pa_time_event *ev)
 {
-	lem_debug("freeing event %p", ev);
+	//lem_debug("freeing event %p", ev);
 	ev_timer_stop(EV_G_ &ev->w);
 	if (ev->destroy)
 		ev->destroy(&loop_api, ev, ev->w.data);
@@ -254,7 +254,7 @@ time_free(pa_time_event *ev)
 static void
 time_set_destroy(struct pa_time_event *ev, pa_time_event_destroy_cb_t cb)
 {
-	lem_debug("setting destroy callback");
+	//lem_debug("setting destroy callback");
 	ev->destroy = cb;
 }
 
@@ -267,7 +267,7 @@ defer_handler(EV_P_ struct ev_idle *w, int revents)
 	struct pa_defer_event *ev = (struct pa_defer_event *)w;
 
 	(void)revents;
-	lem_debug("callback..");
+	//lem_debug("callback..");
 
 	ev->cb(&loop_api, ev, ev->w.data);
 }
@@ -278,7 +278,7 @@ defer_new(pa_mainloop_api *a, pa_defer_event_cb_t cb, void *userdata)
 	struct pa_defer_event *ev = lem_xmalloc(sizeof(struct pa_defer_event));
 
 	(void)a;
-	lem_debug("new defer %p", ev);
+	//lem_debug("new defer %p", ev);
 
 	ev_idle_init(&ev->w, defer_handler);
 	ev->w.data = userdata;
@@ -293,10 +293,10 @@ static void
 defer_enable(struct pa_defer_event *ev, int b)
 {
 	if (b) {
-		lem_debug("starting");
+		//lem_debug("starting");
 		ev_idle_start(EV_G_ &ev->w);
 	} else {
-		lem_debug("stopping");
+		//lem_debug("stopping");
 		ev_idle_stop(EV_G_ &ev->w);
 	}
 }
@@ -304,7 +304,7 @@ defer_enable(struct pa_defer_event *ev, int b)
 static void
 defer_free(struct pa_defer_event *ev)
 {
-	lem_debug("freeing event %p", ev);
+	//lem_debug("freeing event %p", ev);
 	if (ev->destroy)
 		ev->destroy(&loop_api, ev, ev->w.data);
 	ev_idle_stop(EV_G_ &ev->w);
@@ -314,6 +314,6 @@ defer_free(struct pa_defer_event *ev)
 static void
 defer_set_destroy(struct pa_defer_event *ev, pa_defer_event_destroy_cb_t cb)
 {
-	lem_debug("setting destroy callback");
+	//lem_debug("setting destroy callback");
 	ev->destroy = cb;
 }

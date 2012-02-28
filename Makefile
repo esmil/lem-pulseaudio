@@ -1,6 +1,6 @@
 CC         = gcc
 CFLAGS    ?= -O2 -pipe -Wall -Wextra -Wno-variadic-macros
-CFLAGS    += -std=c99
+CFLAGS    += -std=c99 -D_GNU_SOURCE
 PKGCONFIG  = pkg-config
 STRIP      = strip
 INSTALL    = install
@@ -38,7 +38,7 @@ endif
 
 all: $(clibs)
 
-core.so: pulseaudio.c mainloop.c query.c set.c
+core.so: pulseaudio.c mainloop.c query.c set.c stream.c
 	$E '  CCLD $@'
 	$Q$(CC) $(CFLAGS) -fPIC -nostartfiles $(SHARED) $< -o $@ $(LDFLAGS) -lpulse
 

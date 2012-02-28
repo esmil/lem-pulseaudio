@@ -17,12 +17,14 @@
  */
 
 #include <stdlib.h>
+#include <math.h>
 #include <lem.h>
 #include <pulse/context.h>
 #include <pulse/introspect.h>
 #include <pulse/sample.h>
 #include <pulse/subscribe.h>
 #include <pulse/mainloop-api.h>
+#include <pulse/stream.h>
 
 #include "mainloop.c"
 
@@ -92,6 +94,7 @@ ctx_success_cb(pa_context *c, int success, void *userdata)
 
 #include "query.c"
 #include "set.c"
+#include "stream.c"
 
 static int
 ctx_subscribe(lua_State *T)
@@ -394,6 +397,10 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.kill_source_output = <ctx_kill_source_output> */
 	lua_pushcfunction(L, ctx_kill_source_output);
 	lua_setfield(L, -2, "kill_source_output");
+
+	/* mt.beep = <ctx_beep> */
+	lua_pushcfunction(L, ctx_beep);
+	lua_setfield(L, -2, "beep");
 
 	/* mt.subscribe = <ctx_subscribe> */
 	lua_pushcfunction(L, ctx_subscribe);
