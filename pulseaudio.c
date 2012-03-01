@@ -305,6 +305,12 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.__gc = <stream_gc> */
 	lua_pushcfunction(L, stream_gc);
 	lua_setfield(L, -2, "__gc");
+	/* mt.connect_playback = <stream_connect_playback> */
+	lua_pushcfunction(L, stream_connect_playback);
+	lua_setfield(L, -2, "connect_playback");
+	/* mt.disconnect = <stream_disconnect> */
+	lua_pushcfunction(L, stream_disconnect);
+	lua_setfield(L, -2, "disconnect");
 	/* mt.writable_wait = <stream_writable_wait> */
 	lua_pushcfunction(L, stream_writable_wait);
 	lua_setfield(L, -2, "writable_wait");
