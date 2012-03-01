@@ -5,9 +5,28 @@ local pa    = require 'lem.pulseaudio'
 
 local c = assert(pa.connect('LEM PulseAudio Beep'))
 
-print(c:beep())
+local stream = c:stream();
 
-utils.sleeper():sleep(10)
+print(stream)
+
+local sin = math.sin
+local t, step = 0, 1 / 44100
+
+print("step:", step)
+
+repeat
+	local samples = stream:writable_wait()
+
+	print(samples)
+
+	local buf = {}
+	for i = 1, samples do
+		buf[i] = 10000 * sin(220 * 2 * 3.1415 * t)
+		t = t + step
+	end
+
+	stream:write(buf)
+until t > 10
 
 assert(c:disconnect())
 

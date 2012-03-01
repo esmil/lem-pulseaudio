@@ -297,6 +297,23 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* create module table */
 	lua_newtable(L);
 
+	/* create metatable for Stream objects */
+	lua_newtable(L);
+	/* mt.__index = mt */
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+	/* mt.__gc = <stream_gc> */
+	lua_pushcfunction(L, stream_gc);
+	lua_setfield(L, -2, "__gc");
+	/* mt.writable_wait = <stream_writable_wait> */
+	lua_pushcfunction(L, stream_writable_wait);
+	lua_setfield(L, -2, "writable_wait");
+	/* mt.write = <stream_write> */
+	lua_pushcfunction(L, stream_write);
+	lua_setfield(L, -2, "write");
+	/* insert table */
+	lua_setfield(L, -2, "Stream");
+
 	/* create metatable for Context objects */
 	lua_newtable(L);
 	/* mt.__index = mt */
@@ -399,8 +416,9 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	lua_setfield(L, -2, "kill_source_output");
 
 	/* mt.beep = <ctx_beep> */
-	lua_pushcfunction(L, ctx_beep);
-	lua_setfield(L, -2, "beep");
+	lua_getfield(L, -2, "Stream");
+	lua_pushcclosure(L, ctx_stream, 1);
+	lua_setfield(L, -2, "stream");
 
 	/* mt.subscribe = <ctx_subscribe> */
 	lua_pushcfunction(L, ctx_subscribe);
