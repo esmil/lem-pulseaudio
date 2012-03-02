@@ -6,10 +6,11 @@ local pa    = require 'lem.pulseaudio'
 local c = assert(pa.connect('LEM PulseAudio Beep'))
 
 local rate = 48000
-local s = assert(c:stream('Beep!', 's16le', rate, 1))
+local s = assert(c:stream('Beep!', 'float32le', rate, 1))
 assert(s:connect_playback())
 
 local sin, tau = math.sin, 2*math.pi
+local fmod, floor = math.fmod, math.floor
 local t, step = 0, 1/rate
 
 repeat
@@ -19,8 +20,15 @@ repeat
 
 	local buf = {}
 	for i = 1, samples do
-		local tt = tau*t
-		buf[i] = 10000 * sin(440 * (tt + 0.05*sin(4*tt)))
+		--[[ Sinus
+		buf[i] = sin(440 * tau * t)
+		--]]
+		--[[ Firkant
+		buf[i] = 2*floor(2*fmod(440*t, 1)) - 1
+		--]]
+		--[[ Savtak
+		buf[i] = 2*fmod(440*t, 1) - 1
+		--]]
 		t = t + step
 	end
 

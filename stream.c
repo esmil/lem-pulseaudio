@@ -132,23 +132,13 @@ stream_writable_wait(lua_State *T)
 }
 
 static int
-stream_write(lua_State *T)
+stream_write_s16le(lua_State *T, struct stream *s)
 {
-	struct stream *s;
 	void *buf;
 	size_t size;
 	short *array;
 	size_t len;
 	int i;
-
-	luaL_checktype(T, 1, LUA_TUSERDATA);
-	luaL_checktype(T, 2, LUA_TTABLE);
-	s = lua_touserdata(T, 1);
-	if (s->T != NULL) {
-		lua_pushnil(T);
-		lua_pushliteral(T, "busy");
-		return 2;
-	}
 
 	size = (size_t) -1;
 	if (pa_stream_begin_write(s->handle, &buf, &size))
@@ -198,6 +188,93 @@ error:
 	lua_pushnil(T);
 	lua_pushliteral(T, "error writing to stream");
 	return 2;
+}
+
+static int
+stream_write_float32le(lua_State *T, struct stream *s)
+{
+	void *buf;
+	size_t size;
+	float *array;
+	size_t len;
+	int i;
+
+	size = (size_t) -1;
+	if (pa_stream_begin_write(s->handle, &buf, &size))
+		goto error;
+
+	array = buf;
+	len = size / sizeof(float);
+	size = 0;
+
+	for (i = 1;; i++) {
+		lua_settop(T, 2);
+		lua_rawgeti(T, 2, i);
+		if (lua_type(T, 3) != LUA_TNUMBER)
+			break;
+
+		*array++ = lua_tonumber(T, 3);
+		len--;
+		size += sizeof(float);
+
+		if (len == 0) {
+			lem_debug("writing %lu bytes, %lu samples",
+					size, size / sizeof(float));
+			if (pa_stream_write(s->handle, buf, size,
+					NULL, 0, PA_SEEK_RELATIVE))
+				goto error;
+
+			size = (size_t) -1;
+			if (pa_stream_begin_write(s->handle, &buf, &size))
+				goto error;
+
+			array = buf;
+			len = size / sizeof(float);
+			size = 0;
+		}
+	}
+
+	lem_debug("writing %lu bytes, %lu samples",
+			size, size / sizeof(float));
+	if (pa_stream_write(s->handle, buf, size,
+			NULL, 0, PA_SEEK_RELATIVE))
+		goto error;
+
+	lua_pushboolean(T, 1);
+	return 1;
+
+error:
+	lua_pushnil(T);
+	lua_pushliteral(T, "error writing to stream");
+	return 2;
+}
+
+static int
+stream_write(lua_State *T)
+{
+	struct stream *s;
+	const pa_sample_spec *ss;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	luaL_checktype(T, 2, LUA_TTABLE);
+	s = lua_touserdata(T, 1);
+	if (s->T != NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "busy");
+		return 2;
+	}
+
+	ss = pa_stream_get_sample_spec(s->handle);
+	switch (ss->format) {
+	case PA_SAMPLE_S16LE:
+		return stream_write_s16le(T, s);
+	case PA_SAMPLE_FLOAT32LE:
+		return stream_write_float32le(T, s);
+	default:
+		lua_pushnil(T);
+		lua_pushliteral(T, "unsupported sample format");
+		return 2;
+	}
 }
 
 static void
