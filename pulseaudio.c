@@ -305,6 +305,18 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.__gc = <stream_gc> */
 	lua_pushcfunction(L, stream_gc);
 	lua_setfield(L, -2, "__gc");
+	/* mt.state = <stream_state> */
+	lua_pushcfunction(L, stream_state);
+	lua_setfield(L, -2, "state");
+	/* mt.drain = <stream_drain> */
+	lua_pushcfunction(L, stream_drain);
+	lua_setfield(L, -2, "drain");
+	/* mt.flush = <stream_flush> */
+	lua_pushcfunction(L, stream_flush);
+	lua_setfield(L, -2, "flush");
+	/* mt.prebuf = <stream_prebuf> */
+	lua_pushcfunction(L, stream_prebuf);
+	lua_setfield(L, -2, "prebuf");
 	/* mt.connect_playback = <stream_connect_playback> */
 	lua_pushcfunction(L, stream_connect_playback);
 	lua_setfield(L, -2, "connect_playback");

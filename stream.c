@@ -18,6 +18,20 @@ stream_gc(lua_State *T)
 }
 
 static void
+stream_success_cb(pa_stream *h, int success, void *userdata)
+{
+	struct stream *s = userdata;
+	lua_State *T = s->T;
+
+	(void)h;
+	lem_debug("success = %d", success);
+
+	lua_pushboolean(T, success);
+	s->T = NULL;
+	lem_queue(T, 1);
+}
+
+static void
 stream_state_cb(pa_stream *h, void *userdata)
 {
 	pa_stream_state_t state = pa_stream_get_state(h);
@@ -41,6 +55,34 @@ stream_state_cb(pa_stream *h, void *userdata)
 		lem_debug("TERMINATED");
 		break;
 	}
+}
+
+static int
+stream_state(lua_State *T)
+{
+	struct stream *s;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	s = lua_touserdata(T, 1);
+
+	switch (pa_stream_get_state(s->handle)) {
+	case PA_STREAM_UNCONNECTED:
+		lua_pushliteral(T, "unconnected");
+		break;
+	case PA_STREAM_CREATING:
+		lua_pushliteral(T, "creating");
+		break;
+	case PA_STREAM_READY:
+		lua_pushliteral(T, "ready");
+		break;
+	case PA_STREAM_FAILED:
+		lua_pushliteral(T, "failed");
+		break;
+	case PA_STREAM_TERMINATED:
+		lua_pushliteral(T, "terminated");
+		break;
+	}
+	return 1;
 }
 
 static void
@@ -101,7 +143,6 @@ stream_write(lua_State *T)
 
 	luaL_checktype(T, 1, LUA_TUSERDATA);
 	luaL_checktype(T, 2, LUA_TTABLE);
-
 	s = lua_touserdata(T, 1);
 	if (s->T != NULL) {
 		lua_pushnil(T);
@@ -225,9 +266,10 @@ stream_connect_playback(lua_State *T)
 }
 
 static int
-stream_disconnect(lua_State *T)
+stream_drain(lua_State *T)
 {
 	struct stream *s;
+	pa_operation *o;
 
 	luaL_checktype(T, 1, LUA_TUSERDATA);
 	s = lua_touserdata(T, 1);
@@ -235,6 +277,68 @@ stream_disconnect(lua_State *T)
 		lua_pushnil(T);
 		lua_pushliteral(T, "busy");
 		return 2;
+	}
+
+	lua_settop(T, 1);
+	s->T = T;
+	o = pa_stream_drain(s->handle, stream_success_cb, s);
+	pa_operation_unref(o);
+	return lua_yield(T, 1);
+}
+
+static int
+stream_flush(lua_State *T)
+{
+	struct stream *s;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	s = lua_touserdata(T, 1);
+	if (s->T != NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "busy");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	s->T = T;
+	o = pa_stream_flush(s->handle, stream_success_cb, s);
+	pa_operation_unref(o);
+	return lua_yield(T, 1);
+}
+
+static int
+stream_prebuf(lua_State *T)
+{
+	struct stream *s;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	s = lua_touserdata(T, 1);
+	if (s->T != NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "busy");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	s->T = T;
+	o = pa_stream_prebuf(s->handle, stream_success_cb, s);
+	pa_operation_unref(o);
+	return lua_yield(T, 1);
+}
+
+static int
+stream_disconnect(lua_State *T)
+{
+	struct stream *s;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	s = lua_touserdata(T, 1);
+	if (s->T != NULL) {
+		lua_pushnil(s->T);
+		lua_pushliteral(s->T, "disconnected");
+		lem_queue(s->T, 2);
 	}
 
 	if (pa_stream_disconnect(s->handle)) {
