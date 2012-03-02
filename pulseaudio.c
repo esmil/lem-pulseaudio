@@ -294,6 +294,8 @@ ctx_position_name(lua_State *T)
 int
 luaopen_lem_pulseaudio_core(lua_State *L)
 {
+	int i;
+
 	/* create module table */
 	lua_newtable(L);
 
@@ -308,6 +310,9 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	/* mt.state = <stream_state> */
 	lua_pushcfunction(L, stream_state);
 	lua_setfield(L, -2, "state");
+	/* mt.set_name = <stream_set_name> */
+	lua_pushcfunction(L, stream_set_name);
+	lua_setfield(L, -2, "set_name");
 	/* mt.drain = <stream_drain> */
 	lua_pushcfunction(L, stream_drain);
 	lua_setfield(L, -2, "drain");
@@ -499,6 +504,15 @@ luaopen_lem_pulseaudio_core(lua_State *L)
 	lua_setfield(L, -2, "__index");
 	lua_setmetatable(L, -2);
 	lua_setfield(L, -2, "position_name");
+
+	/* create sample_format table */
+	lua_createtable(L, 0, PA_SAMPLE_MAX);
+	for (i = 0; i < PA_SAMPLE_MAX; i++) {
+		lua_pushstring(L, pa_sample_format_to_string(i));
+		lua_pushnumber(L, i);
+		lua_rawset(L, -3);
+	}
+	lua_setfield(L, -2, "sample_format");
 
 	return 1;
 }

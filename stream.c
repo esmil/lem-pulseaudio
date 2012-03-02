@@ -266,6 +266,29 @@ stream_connect_playback(lua_State *T)
 }
 
 static int
+stream_set_name(lua_State *T)
+{
+	struct stream *s;
+	const char *name;
+	pa_operation *o;
+
+	luaL_checktype(T, 1, LUA_TUSERDATA);
+	name = luaL_checkstring(T, 2);
+	s = lua_touserdata(T, 1);
+	if (s->T != NULL) {
+		lua_pushnil(T);
+		lua_pushliteral(T, "busy");
+		return 2;
+	}
+
+	lua_settop(T, 1);
+	s->T = T;
+	o = pa_stream_set_name(s->handle, name, stream_success_cb, s);
+	pa_operation_unref(o);
+	return lua_yield(T, 1);
+}
+
+static int
 stream_drain(lua_State *T)
 {
 	struct stream *s;
@@ -362,16 +385,18 @@ ctx_stream(lua_State *T)
 
 	luaL_checktype(T, 1, LUA_TUSERDATA);
 	name = luaL_checkstring(T, 2);
+	ss.format = pa_parse_sample_format(luaL_checkstring(T, 3));
+	if (ss.format == PA_SAMPLE_INVALID)
+		return luaL_argerror(T, 3, "invalid sample format");
+	ss.rate = luaL_checknumber(T, 4);
+	ss.channels = luaL_checknumber(T, 5);
+
 	ctx = lua_touserdata(T, 1);
 	if (ctx->handle == NULL) {
 		lua_pushnil(T);
 		lua_pushliteral(T, "closed");
 		return 2;
 	}
-
-	ss.format = PA_SAMPLE_S16LE;
-	ss.rate = 44100;
-	ss.channels = 2;
 
 	h = pa_stream_new(ctx->handle, name, &ss, NULL);
 	if (h == NULL) {
