@@ -492,17 +492,17 @@ POSTM('^/client/(%d+)$', function(req, res, idx)
 	end
 end)
 
-GETM('^/(js/.+)$', function(req, res, file)
+GETM('^/(js/[^/]+)$', function(req, res, file)
 	res.headers['Content-Type'] = 'text/javascript; charset=UTF-8'
 	res.file = file
 end)
 
-GETM('^/(css/.+)$', function(req, res, file)
+GETM('^/(css/[^/]+)$', function(req, res, file)
 	res.headers['Content-Type'] = 'text/css; charset=UTF-8'
 	res.file = file
 end)
 
-GETM('^/(img/.+)$', function(req, res, file)
+GETM('^/(img/[^/]+)$', function(req, res, file)
 	res.headers['Content-Type'] = 'image/png'
 	res.file = file
 end)
