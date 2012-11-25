@@ -10,6 +10,25 @@ var state = {},
         module:        document.getElementById('modules'),
         sample_cache:  document.getElementById('samples')
     },
+    domify = function(t) {
+        var e = document.createElement(t.name),
+            i, ilen;
+
+        if (t.attr) {
+            for (i in t.attr) {
+                e.setAttribute(i, t.attr[i]);
+            }
+        }
+        if (t.child) {
+            for (i = 0, ilen = t.child.length; i < ilen; i++) {
+                e.appendChild(domify(t.child[i]));
+            }
+        }
+        if (t.text) {
+            e.innerText = t.text;
+        }
+        return e;
+    },
     mute = function(typ, idx, v) {
         $.post('/' + typ + '/' + idx, { mute: v });
     },
@@ -29,164 +48,237 @@ var state = {},
         return Math.round(100 * vol / 65536);
     },
     addVolumeControl = function(r, typ, idx, mute, vol) {
-        var v,
-            i, ilen;
+        var x, i, ilen;
 
         if (vol) {
             for (i = 0, ilen = vol.length; i < ilen; i++) {
-                v = vol[i];
-                r.push('<p>', v.name, ' ', volToPercent(v.value),
-                        '% <div class="progress"><div class="bar" style="width:',
-                        volToPercent(v.value), '%"></div></div></p>');
+                x = vol[i];
+
+                r.push({ name: 'p', text: x.name + ' ' + volToPercent(x.value) + '%' });
+                r.push({
+                    name: 'div', attr: { 'class': 'progress' },
+                    child: [{
+                        name: 'div',
+                        attr: { 'class': 'bar', 'style': 'width:' + volToPercent(x.value) + '%' }
+                    }],
+                });
             }
         }
 
-        r.push('<div class="btn-toolbar"><div class="btn-group"><button class="btn');
-        if (mute) {
-            r.push(' active');
-        }
-        r.push('" onclick="mute(\'', typ, '\',', idx, ',', !mute,
-                ')"><i class="icon-volume-off"></i> Mute</button></div>');
+        x = [{
+            name: 'div', attr: { 'class': 'btn-group' },
+            child: [{
+                name: 'button',
+                attr: {
+                    'class': (mute ? 'btn active' : 'btn'),
+                    'onclick': 'mute(\'' + typ + '\',' + idx + ',' + !mute + ')',
+                },
+                child: [
+                    { name: 'i', attr: { 'class': 'icon-volume-off' } },
+                    { name: 'span', text: ' Mute' },
+                ]
+            }],
+        }];
+
         if (vol) {
-            r.push('<div class="btn-group"><button class="btn" onclick="volDown(\'',
-                    typ, '\',', idx, ')"><i class="icon-volume-down"></i></button><button class="btn" onclick="volUp(\'',
-                    typ, '\',', idx, ')"><i class="icon-volume-up"></i></button></div>');
+            x.push({
+                name: 'div', attr: { 'class': 'btn-group' },
+                child: [
+                    {
+                        name: 'button',
+                        attr: {
+                            'class': 'btn',
+                            'onclick': 'volDown(\'' + typ + '\',' + idx + ')',
+                        },
+                        child: [
+                            { name: 'i', attr: { 'class': 'icon-volume-down' } },
+                        ]
+                    }, {
+                        name: 'button',
+                        attr: {
+                            'class': 'btn',
+                            'onclick': 'volUp(\'' + typ + '\',' + idx + ')',
+                        },
+                        child: [
+                            { name: 'i', attr: { 'class': 'icon-volume-up' } },
+                        ]
+                    }
+                ],
+            });
         }
-        r.push('</div>');
+
+        r.push({
+            name: 'div', attr: { 'class': 'btn-toolbar' },
+            child: x,
+        });
     },
     template = {
         server: function(s) {
-            return '<dl><dt>Server Name</dt><dd>' + s.server_name + '</dd>'
-                + '<dt>Server Version</dt><dd>' + s.server_version + '</dd>'
-                + '<dt>Host Name</dt><dd>' + s.host_name + '</dd>'
-                + '<dt>User Name</dt><dd>' + s.user_name + '</dd>'
-                + '</dl>';
+            return {
+                name: 'dl',
+                child: [
+                    { name: 'dt', text: 'Server Name' },    { name: 'dd', text: s.server_name },
+                    { name: 'dt', text: 'Server Version' }, { name: 'dd', text: s.server_version },
+                    { name: 'dt', text: 'Host Name' },      { name: 'dd', text: s.host_name },
+                    { name: 'dt', text: 'User Name' },      { name: 'dd', text: s.user_name },
+                ],
+            };
         },
-        sink_input: function(sink_input) {
-            var r = [], si,
-                i, ilen;
+        sink_input: function(si) {
+            var b = [
+                {
+                    name: 'a',
+                    attr: {
+                        'class': 'close',
+                        'onclick': 'kill(\'sink-input\',' + si.index + ')',
+                    },
+                },
+                { name: 'h3', text: si.name },
+            ];
+            addVolumeControl(b, 'sink-input', si.index, si.mute, si.volume);
 
-            for (i = 0, ilen = sink_input.length; i < ilen; i++) {
-                si = sink_input[i];
-                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'sink-input\',',
-                        si.index, ')">×</a><h3>', si.name, '</h3>');
-                addVolumeControl(r, 'sink-input', si.index, si.mute, si.volume);
-                r.push('</div>');
-            }
-            return r.join('');
+            return {
+                name: 'div',
+                attr: { 'class': 'alert alert-info' },
+                child: b,
+            };
         },
-        source_output: function(source_output) {
-            var r = [], so,
-                i, ilen;
+        source_output: function(so) {
+            var b = [
+                {
+                    name: 'a',
+                    attr: {
+                        'class': 'close',
+                        'onclick': 'kill(\'source-output\',' + so.index + ')',
+                    },
+                },
+                { name: 'h3', text: so.name },
+            ];
+            addVolumeControl(b, 'source-output', so.index, so.mute, so.volume);
 
-            for (i = 0, ilen = source_output.length; i < ilen; i++) {
-                so = source_output[i];
-                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'source-output\',',
-                        so.index, ')">×</a><h3>', so.name, '</h3>');
-                addVolumeControl(r, 'source-output', so.index, so.mute, so.volume);
-                r.push('</div>');
-            }
-            return r.join('');
+            return {
+                name: 'div',
+                attr: { 'class': 'alert alert-info' },
+                child: b,
+            };
         },
-        sink: function(sink) {
-            var r = [], s,
-                i, ilen;
+        sink: function(s) {
+            var b = [ { name: 'h3', text: s.description } ];
 
-            for (i = 0, ilen = sink.length; i < ilen; i++) {
-                s = sink[i]
-                r.push('<div class="alert alert-info"><h3>', s.description, '</h3>');
-                if (s.base_volume) {
-                    r.push('<p>Base Volume: ', volToPercent(s.base_volume), '%</p>');
-                }
-                addVolumeControl(r, 'sink', s.index, s.mute, s.volume);
-                r.push('</div>');
+            if (s.base_volume) {
+                b.push({ name: 'p', text: 'Base Volume: ' + volToPercent(s.base_volume) + '%' });
             }
-            return r.join('');
+            addVolumeControl(b, 'sink', s.index, s.mute, s.volume);
+
+            return {
+                name: 'div',
+                attr: { 'class': 'alert alert-info' },
+                child: b,
+            };
         },
-        source: function(source) {
-            var r = [], s,
-                i, ilen;
+        source: function(s) {
+            var b = [ { name: 'h3', text: s.description } ];
 
-            for (i = 0, ilen = source.length; i < ilen; i++) {
-                s = source[i]
-                r.push('<div class="alert alert-info"><h3>', s.description, '</h3>');
-                if (s.base_volume) {
-                    r.push('<p>Base Volume: ', volToPercent(s.base_volume), '%</p>');
-                }
-                addVolumeControl(r, 'source', s.index, s.mute, s.volume);
-                r.push('</div>');
+            if (s.base_volume) {
+                b.push({ name: 'p', text: 'Base Volume: ' + volToPercent(s.base_volume) + '%' });
             }
-            return r.join('');
+            addVolumeControl(b, 'sink', s.index, s.mute, s.volume);
+
+            return {
+                name: 'div',
+                attr: { 'class': 'alert alert-info' },
+                child: b,
+            };
         },
-        card: function(card) {
-            var r = [], c,
-                i, ilen;
-
-            for (i = 0, ilen = card.length; i < ilen; i++) {
-                c = card[i];
-                r.push('<div class="alert alert-info"><h3>', c.description, '</h3><p>',
-                        c.name, '<br/>',
-                        c.card_name, '<br/>',
-                        c.product_name, '</p></div>');
-            }
-            return r.join('');
+        card: function(c) {
+            return {
+                name: 'div',
+                attr: { 'class': 'alert alert-info' },
+                child: [
+                    { name: 'h3', text: c.description },
+                    { name: 'p',  text: c.name },
+                    { name: 'p',  text: c.card_name },
+                    { name: 'p',  text: c.product_name },
+                ],
+            };
         },
-        client: function(client) {
-            var r = [], c,
-                i, ilen;
-
-            for (i = 0, ilen = client.length; i < ilen; i++) {
-                c = client[i];
-                r.push('<div class="alert alert-info"><a class="close" onclick="kill(\'client\',',
-                        c.index, ')">×</a><h3>', c.name, '</h3><dl><dt>Host</dt><dd>',
-                        c.host, '</dd><dt>User</dt><dd>',
-                        c.user, '</dd><dt>Binary</dt><dd>',
-                        c.binary, '</dd></dl></div>');
-            }
-            return r.join('');
+        client: function(c) {
+            return {
+                name: 'div',
+                attr: { 'class': 'alert alert-info' },
+                child: [
+                    {
+                        name: 'a',
+                        attr: {
+                            'class': 'close',
+                            'onclick': 'kill(\'client\',' + c.index + ')',
+                        },
+                        text: '×',
+                    }, {
+                        name: 'h3',
+                        text: c.name,
+                    }, {
+                        name: 'dl',
+                        child: [
+                            { name: 'dt', text: 'Host' },   { name: 'dd', text: c.host },
+                            { name: 'dt', text: 'User' },   { name: 'dd', text: c.user },
+                            { name: 'dt', text: 'Binary' }, { name: 'dd', text: c.binary },
+                        ],
+                    },
+                ],
+            };
         },
-        module: function(module) {
-            var r = [], m,
-                i, ilen;
-
-            for (i = 0, ilen = module.length; i < ilen; i++) {
-                m = module[i];
-                r.push('<div class="alert alert-info"><a class="close" onclick="unload(',
-                        m.index, ')">×</a><h3>', m.name, '</h3><p>',
-                        m.description, '<br/>',
-                        m.author, '<br/>',
-                        m.version, '</p></div>');
-            }
-            return r.join('');
+        module: function(m) {
+            return {
+                name: 'div',
+                attr: { 'class': 'alert alert-info' },
+                child: [
+                    {
+                        name: 'a',
+                        attr: {
+                            'class': 'close',
+                            'onclick': 'unload(' + m.index + ')',
+                        },
+                        text: '×',
+                    },
+                    { name: 'h3', text: m.name },
+                    { name: 'p',  text: m.description },
+                    { name: 'p',  text: m.author },
+                    { name: 'p',  text: m.version },
+                ],
+            };
         },
-        sample_cache: function(sample) {
-            var r = [], s,
-                i, ilen;
-
-            for (i = 0, ilen = sample.length; i < ilen; i++) {
-                s = sample[i];
-                r.push('<div class="alert alert-info"><h3>', s.description,
-                        '</h3></div>');
-            }
-            return r.join('');
+        sample_cache: function(s) {
+            return {
+                name: 'div',
+                attr: { 'class': 'alert alert-info' },
+                child: [ { name: 'h3', text: s.description } ],
+            };
         }
     },
     raw = document.getElementById('raw');
 
 $(function() {
     function onDataReceived(ret) {
-        var p, e, f;
+        var p, e, el, f, i, ilen;
 
         for (p in ret) {
             e = ret[p];
             state[p] = e;
             f = template[p];
             if (f) {
-                output[p].innerHTML = f(e);
+                el = output[p];
+                el.innerHTML = '';
+                if (e.constructor === Array) {
+                    for (i = 0, ilen = e.length; i < ilen; i++) {
+                        el.appendChild(domify(f(e[i])));
+                    }
+                } else {
+                    el.appendChild(domify(f(e)));
+                }
             }
         }
-        //raw.innerHTML = '<![CDATA[' + JSON.stringify(state, null, ' ') + ']]>';
-        raw.innerHTML = JSON.stringify(state, null, ' ');
+        raw.innerText = JSON.stringify(state, null, ' ');
         prettyPrint();
         $.getJSON('/poll/' + ret.stamp, onDataReceived);
     }
