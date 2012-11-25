@@ -143,7 +143,7 @@ io_new(pa_mainloop_api *a, int fd, pa_io_event_flags_t events,
 	ev->destroy = NULL;
 
 	if (revents)
-		ev_io_start(EV_G_ &ev->w);
+		ev_io_start(LEM_ &ev->w);
 	return ev;
 }
 
@@ -162,10 +162,10 @@ io_enable(pa_io_event *ev, pa_io_event_flags_t events)
 		revents |= EV_READ;
 
 	if (revents != ev->w.events) {
-		ev_io_stop(EV_G_ &ev->w);
+		ev_io_stop(LEM_ &ev->w);
 		ev->w.events = revents;
 		if (revents)
-			ev_io_start(EV_G_ &ev->w);
+			ev_io_start(LEM_ &ev->w);
 	}
 }
 
@@ -173,7 +173,7 @@ static void
 io_free(pa_io_event *ev)
 {
 	lem_debug("freeing event %p", ev);
-	ev_io_stop(EV_G_ &ev->w);
+	ev_io_stop(LEM_ &ev->w);
 	if (ev->destroy)
 		ev->destroy(&loop_api, ev, ev->w.data);
 	free(ev);
@@ -213,7 +213,7 @@ time_new(pa_mainloop_api *a, const struct timeval *tv,
 	ev_tstamp timeout = timeval_to_stamp(tv);
 
 	(void)a;
-	lem_debug("after = %f seconds", timeout - ev_now(EV_G));
+	lem_debug("after = %f seconds", timeout - ev_now(LEM));
 
 	ev->w.data = userdata;
 	ev->tv.tv_sec = tv->tv_sec;
@@ -221,8 +221,8 @@ time_new(pa_mainloop_api *a, const struct timeval *tv,
 	ev->cb = cb;
 	ev->destroy = NULL;
 
-	ev_timer_init(&ev->w, time_handler, timeout - ev_now(EV_G), 0);
-	ev_timer_start(EV_G_ &ev->w);
+	ev_timer_init(&ev->w, time_handler, timeout - ev_now(LEM), 0);
+	ev_timer_start(LEM_ &ev->w);
 	return ev;
 }
 
@@ -231,21 +231,21 @@ time_restart(pa_time_event *ev, const struct timeval *tv)
 {
 	ev_tstamp timeout = timeval_to_stamp(tv);
 
-	lem_debug("resetting to %f seconds", timeout - ev_now(EV_G));
+	lem_debug("resetting to %f seconds", timeout - ev_now(LEM));
 
 	ev->tv.tv_sec = tv->tv_sec;
 	ev->tv.tv_usec = tv->tv_usec;
 
-	ev_timer_stop(EV_G_ &ev->w);
-	ev_timer_set(&ev->w, timeout - ev_now(EV_G), 0);
-	ev_timer_start(EV_G_ &ev->w);
+	ev_timer_stop(LEM_ &ev->w);
+	ev_timer_set(&ev->w, timeout - ev_now(LEM), 0);
+	ev_timer_start(LEM_ &ev->w);
 }
 
 static void
 time_free(pa_time_event *ev)
 {
 	lem_debug("freeing event %p", ev);
-	ev_timer_stop(EV_G_ &ev->w);
+	ev_timer_stop(LEM_ &ev->w);
 	if (ev->destroy)
 		ev->destroy(&loop_api, ev, ev->w.data);
 	free(ev);
@@ -285,7 +285,7 @@ defer_new(pa_mainloop_api *a, pa_defer_event_cb_t cb, void *userdata)
 	ev->cb = cb;
 	ev->destroy = NULL;
 
-	ev_idle_start(EV_G_ &ev->w);
+	ev_idle_start(LEM_ &ev->w);
 	return ev;
 }
 
@@ -294,10 +294,10 @@ defer_enable(struct pa_defer_event *ev, int b)
 {
 	if (b) {
 		lem_debug("starting");
-		ev_idle_start(EV_G_ &ev->w);
+		ev_idle_start(LEM_ &ev->w);
 	} else {
 		lem_debug("stopping");
-		ev_idle_stop(EV_G_ &ev->w);
+		ev_idle_stop(LEM_ &ev->w);
 	}
 }
 
@@ -307,7 +307,7 @@ defer_free(struct pa_defer_event *ev)
 	lem_debug("freeing event %p", ev);
 	if (ev->destroy)
 		ev->destroy(&loop_api, ev, ev->w.data);
-	ev_idle_stop(EV_G_ &ev->w);
+	ev_idle_stop(LEM_ &ev->w);
 	free(ev);
 }
 

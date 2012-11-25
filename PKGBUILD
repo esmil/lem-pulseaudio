@@ -13,7 +13,7 @@ source=()
 build() {
   cd "$startdir"
 
-  make NDEBUG=1
+  make
 }
 
 package() {

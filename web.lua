@@ -1,7 +1,6 @@
 #!/usr/bin/env lem
 
 local utils        = require 'lem.utils'
-local gettimeofday = require 'gettimeofday'
 local hathaway     = require 'lem.hathaway'
 local pa           = require 'lem.pulseaudio'
 
@@ -44,7 +43,7 @@ do
 		res:add('],')
 	end
 
-	local now = gettimeofday()
+	local now = utils.now()
 	state = {
 		sink = {
 			stamp  = now,
@@ -55,7 +54,7 @@ do
 				else
 					self.data[idx] = c:sink_info(idx)
 				end
-				self.stamp = gettimeofday()
+				self.stamp = utils.now()
 			end,
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
@@ -78,7 +77,7 @@ do
 				else
 					self.data[idx] = c:source_info(idx)
 				end
-				self.stamp = gettimeofday()
+				self.stamp = utils.now()
 			end,
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
@@ -100,7 +99,7 @@ do
 			data   = assert(c:server_info()),
 			update = function(self)
 				self.data = assert(c:server_info())
-				self.stamp = gettimeofday()
+				self.stamp = utils.now()
 			end,
 			tojson = function(self, res)
 				local t = self.data
@@ -123,7 +122,7 @@ do
 				else
 					self.data[idx] = c:module_info(idx)
 				end
-				self.stamp = gettimeofday()
+				self.stamp = utils.now()
 			end,
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
@@ -149,7 +148,7 @@ do
 				else
 					self.data[idx] = c:client_info(idx)
 				end
-				self.stamp = gettimeofday()
+				self.stamp = utils.now()
 			end,
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
@@ -175,7 +174,7 @@ do
 				else
 					self.data[idx] = c:card_info(idx)
 				end
-				self.stamp = gettimeofday()
+				self.stamp = utils.now()
 			end,
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
@@ -201,7 +200,7 @@ do
 				else
 					self.data[idx] = c:sink_input_info(idx)
 				end
-				self.stamp = gettimeofday()
+				self.stamp = utils.now()
 			end,
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
@@ -226,7 +225,7 @@ do
 				else
 					self.data[idx] = c:source_output_info(idx)
 				end
-				self.stamp = gettimeofday()
+				self.stamp = utils.now()
 			end,
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
@@ -251,7 +250,7 @@ do
 				else
 					self.data[idx] = c:sample_info(idx)
 				end
-				self.stamp = gettimeofday()
+				self.stamp = utils.now()
 			end,
 			tojson = function(self, res)
 				list(self.data, res, function(t, res)
@@ -307,13 +306,13 @@ GETM('^/poll/(%d+%.?%d*)$', function(req, res, stamp)
 	res:add('{')
 	stamp = tonumber(stamp)
 	if not addchanged(res, stamp) then
-		local sleeper = utils.sleeper()
+		local sleeper = utils.newsleeper()
 		queue[sleeper] = true
 		sleeper:sleep(60)
 		queue[sleeper] = nil
 		addchanged(res, stamp)
 	end
-	res:add('"stamp":"%.4f"}', gettimeofday())
+	res:add('"stamp":"%.4f"}', utils.now())
 end)
 
 local parseform
