@@ -1,30 +1,45 @@
 #!/usr/bin/env lem
 
+package.path = '?.lua;' .. package.path
+package.cpath = '?.so;' .. package.cpath
+
 local utils = require 'lem.utils'
 local pa    = require 'lem.pulseaudio'
 
 local c = assert(pa.connect('LEM PulseAudio TestApp'))
 
-print "\nSink info list:"
-for k, sink in pairs(assert(c:sink_info())) do
-	print(k)
-	for k, v in pairs(sink) do
-		if k == 'proplist' then
+local function dump_info(header, info)
+	print()
+	print(header .. ' info list:')
+
+	for k, v in pairs(info) do
+		print(k)
+
+		if v.description then
+			print('', 'description', v.description)
+		end
+		if v.name then
+			print('', 'name', v.name)
+		end
+		if v.index then
+			print('', 'index', v.index)
+		end
+
+		for k, v in pairs(v) do
+			if k ~= 'description'
+				and k ~= 'name'
+				and k ~= 'index'
+				and k ~= 'proplist' then
+				print('', k, v)
+			end
+		end
+
+		if v.proplist then
 			print('', 'proplist:')
-			for k, v in pairs(v) do
+			for k, v in pairs(v.proplist) do
 				print('', '', k, v)
 			end
-		else
-			print('', k, v)
 		end
-	end
-end
-
-print "\nSource info list:"
-for k, source in pairs(assert(c:source_info())) do
-	print(k)
-	for k, v in pairs(source) do
-		print('', k, v)
 	end
 end
 
@@ -33,71 +48,18 @@ for k, v in pairs(assert(c:server_info())) do
 	print(k, v)
 end
 
-print "\nModule info list:"
-for k, module in pairs(assert(c:module_info())) do
-	print(k)
-	for k, v in pairs(module) do
-		print('', k, v)
-	end
-end
-
-print "\nClient info list:"
-for k, client in pairs(assert(c:client_info())) do
-	print(k)
-	for k, v in pairs(client) do
-		if k == 'proplist' then
-			print('', 'proplist:')
-			for k, v in pairs(v) do
-				print('', '', k, v)
-			end
-		else
-			print('', k, v)
-		end
-	end
-end
-
-print "\nCard info list:"
-for k, card in pairs(assert(c:card_info())) do
-	print(k)
-	for k, v in pairs(card) do
-		if k == 'proplist' then
-			print('', 'proplist:')
-			for k, v in pairs(v) do
-				print('', '', k, v)
-			end
-		else
-			print('', k, v)
-		end
-	end
-end
-
-print "\nSink input info list:"
-for k, input in pairs(assert(c:sink_input_info())) do
-	print(k)
-	for k, v in pairs(input) do
-		print('', k, v)
-	end
-end
-
-print "\nSource output info list:"
-for k, output in pairs(assert(c:source_output_info())) do
-	print(k)
-	for k, v in pairs(output) do
-		print('', k, v)
-	end
-end
+dump_info('Sink',   assert(c:sink_info()))
+dump_info('Source', assert(c:source_info()))
+dump_info('Module', assert(c:module_info()))
+dump_info('Client', assert(c:client_info()))
+dump_info('Card',   assert(c:card_info()))
+dump_info('Sink',   assert(c:sink_input_info()))
+dump_info('Source', assert(c:source_output_info()))
+dump_info('Sample', assert(c:sample_info()))
 
 print "\nStat:"
 for k, v in pairs(assert(c:stat())) do
 	print(k, v)
-end
-
-print "\nSample info list:"
-for k, sample in pairs(assert(c:sample_info())) do
-	print(k)
-	for k, v in pairs(sample) do
-		print('', k, v)
-	end
 end
 
 --[[
@@ -125,13 +87,12 @@ while true do
 		end
 	end
 end
+
+print()
+for i = 0, 20 do
+	print(pa.position_name[i])
+end
 --]]
-for i = 0, 20 do
-	print(pa.position_name[i])
-end
-for i = 0, 20 do
-	print(pa.position_name[i])
-end
 
 assert(c:disconnect())
 
